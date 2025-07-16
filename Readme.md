@@ -31,7 +31,7 @@ This project implements a Lightweight Machine to Machine (LwM2M) client and serv
 | Feature                              | 🌐 Client                         | 🖥️ Server                           | ✅ Tests        |
 |--------------------------------------|-----------------------------------|-------------------------------------|-----------------|
 | **Bootstrap Server**                 |                                   |                                     |                 |
-| LwM2M Registration (`/rd`)           | 🕐 Planned                        | 🕐 Planned                          | 🛑 Not Covered  |
+| To be defined                        | 🕐 Planned                        | 🕐 Planned                          | 🛑 Not Covered  |
 |                                      |                                   |                                     |                 |
 | **Server**                           |                                   |                                     |                 |
 | LwM2M Registration (`/rd`)           | ✅ Sends registration             | ✅ Handles registration             | 🟡 Server	   |
@@ -91,9 +91,7 @@ This project implements a Lightweight Machine to Machine (LwM2M) client and serv
 
 - Implement OSCORE encryption for secure communication.
 - Add DTLS support.
-- Integrate serial hardware interfaces.
 - Enhance error handling and retry mechanisms.
-- Fully test CBOR and TLV encoding/decoding.
 
 ---
 
