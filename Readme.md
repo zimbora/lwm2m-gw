@@ -14,14 +14,6 @@
 with pino prety - nice output logs
 >> node client/client.js | npx pino-pretty
 
-## Tests
-
-### Global
->> npm test
-
-### File
->> npx jest test/client/resourceServer.test.js
-
 This project implements a Lightweight Machine to Machine (LwM2M) client and server in Node.js using CoAP.
 
 ---
