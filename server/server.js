@@ -1,157 +1,139 @@
 // server/server.js
-const coap = require('coap');
-const { handleRegister, handleUpdate, handleDeregister} = require('./registration');
-const { sendCoapRequest, emitter } = require('./coapClient');
-const registry = require('./clientRegistry');
+const { 
+  startLwM2MCoapServer,
+  startLwM2MMqttServer,
+  discoveryRequest,
+  getRequest,
+  startObserveRequest,
+  stopObserveRequest,
+  putRequest,
+  postRequest,
+  deleteRequest,
+  createRequest,
+} = require('./resourceClient');
 
-function startLwM2MServer(port = 5683) {
-  const server = coap.createServer();
+const sharedEmitter = require('./transport/sharedEmitter');
+const {listClients} = require('./clientRegistry');
 
-  server.on('request', (req, res) => {
-      
-    const path = req.options
-    .filter(opt => opt.name === 'Uri-Path')
-    .map(opt => opt.value.toString())
-    .join('/');
 
-    const format = req.options
-    .filter(opt => opt.name === 'Content-Format')
-    .map(opt => opt.value.toString())
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Promise Rejection:', reason);
+});
 
-    const observeSeqNumber = req.options
-    .filter(opt => opt.name === 'Observe')
-    .map(opt => opt.value.toString())
-
-    if (req.method === 'POST' && path === 'rd') {
-      handleRegister(req, res)
-        .then(({ ep, location }) => {
-          console.log(`[Server] Client ${ep} registered at ${location}`);
-
-          // Delay slightly to allow client to start its resource server
-          setTimeout(() => {
-            try {
-              getInfo(ep);
-            } catch (err) {
-              console.error(`[Server] Failed to get info from ${ep}:`, err);
-            }
-          }, 100); // You can increase this to 200–300ms if timing issues arise
-        })
-        .catch(err => {
-          console.error('[Server] Registration failed:', err);
-        });
-    }
-
-    if (req.method === 'POST' && path.startsWith('rd/')) {
-      return handleUpdate(req, res, path);
-    }
-
-    if (req.method === 'DELETE' && path.startsWith('rd/')) {
-      return handleDeregister(req, res, path);
-    } 
-
-    // Handle client-pushed notifications (e.g. Observe)
-    if (req.method === 'GET' || req.method === 'PUT' || req.method === 'POST') {
-      let payload = '';
-      req.on('data', (chunk) => {
-        payload += chunk.toString();
-      });
-
-      req.on('end', () => {
-        console.log(`[Server] Notification from client at ${req.rsinfo.address}:${req.rsinfo.port}`);
-        console.log(`[Server] Path: /${path}`);
-        console.log(`[Server] Format: ${format}`);
-        console.log(`[Server] observeSeqNumber: ${observeSeqNumber}`);
-        console.log(`[Server] Payload: ${payload}`);
-        res.code = '2.04';
-        res.end(); // Acknowledge receipt
-      });
-      return;
-    }
-
-    res.code = '4.04';
-    res.end('Not Found');
-    
-  });
-
-  server.listen(port, () => {
-    console.log(`[Server] LwM2M server listening on port ${port}`);
-  });
-}
-
-function getInfo(clientEp) {
+async function getInfo(clientEp) {
   // Delay to wait for client registration
+
   setTimeout(() => {
     const client = clientEp;
     //console.log(`sending requests to client: ${client}`)
 
-    // Read
-    sendCoapRequest(client, 'GET', '/.well-known/core');
+    try{
+      // Read
+      discoveryRequest(clientEp)
 
-    sendCoapRequest(client, 'GET', '/3/0/0');
+      getRequest(clientEp,'/3/0/0')
 
-    // Observe something
-    //sendCoapRequest(client, 'GET', '/3/0/1', null, true);
+      getRequest(clientEp,'/3303/0/5601')
 
-    // Observe Temperature
-    //sendCoapRequest(client, 'GET', '/3303/0/5700', null, true);
+      // Observe timestamp
+      //startObserveRequest(clientEp,'/6/0/7');
 
-    // Write
-    setTimeout(() => sendCoapRequest(client, 'PUT', '/3/0/1', 'NewModel'), 7000);
+      // Observe Temperature
+      startObserveRequest(clientEp,'/3303/0/5700');
 
-    setTimeout(() => sendCoapRequest(client, 'GET', '/3/0/1'), 8000);
+      // Write
+      setTimeout(() => putRequest(clientEp,'/3303/0/5601', "-30.0"), 2000);
 
+      setTimeout(() => getRequest(clientEp,'/3303/0/5601'), 3000);
+    }catch(error){
+      console.error(error);
+    }
     // Execute
     //setTimeout(() => sendCoapRequest(client, 'POST', '/3/0/2'), 9000);
-  }, 3000);
-}
+  }, 2000);
 
-function parseCoreLinkFormat(coreString) {
-  const entries = coreString.split(',');
-  const resources = [];
-
-  for (const entry of entries) {
-    const match = entry.match(/^<([^>]+)>(.*)$/);
-    if (!match) continue;
-
-    const path = match[1];
-    const attrString = match[2];
-    const attributes = {};
-
-    // Parse each ;key[=value] pair
-    const parts = attrString.split(';').map(s => s.trim()).filter(Boolean);
-    for (const part of parts) {
-      const [key, val] = part.split('=');
-      if (val === undefined) {
-        attributes[key] = true;
-      } else {
-        // Remove quotes if present
-        attributes[key] = val.replace(/^"|"$/g, '');
-      }
+  /*
+    This doesn't work, client is set to undefined!!
+    Investigate it..
+  setTimeout(() => {
+    const client = clientEp;
+    try{
+      getRequest(clientEp,'/3303/0/5601');
+    }catch(error){
+      console.error(error);
     }
-
-    resources.push({ path, attributes });
-  }
-
-  return resources;
+  }, 10000);
+  */
 }
 
-startLwM2MServer();
+// Listen for registration events
+sharedEmitter.on('registration', ({ protocol, ep, location }) => {
+  console.log(`[Event] Client registered via ${protocol}: ${ep} at ${location}`);
+  getInfo(ep);
+});
 
+// Listen for update events
+sharedEmitter.on('update', ({ protocol, ep, location }) => {
+  console.log(`[Event] Client updated via ${protocol}: ${ep} at ${location}`);
+});
 
-emitter.on('response', ({ ep, method, path, payload, observe }) => {
+// Listen for deregistration events
+sharedEmitter.on('deregistration', ({ protocol, ep }) => {
+  console.log(`[Event] Client deregistered via ${protocol}: ${ep}`);
+});
+
+sharedEmitter.on('observation', ({ protocol, ep, token, method, path, payload }) => {
   
-  console.log(`[Event] Got response from ${ep} ${path} via ${method}:`);
+  console.log(`[Server] Data received via: ${ep}/${method}${path}`);
+  console.log(`[Server] payload: ${payload}`);
+  
+});
 
-  if(path === '/.well-known/core'){
-    const res = parseCoreLinkFormat(payload);
-    //console.log(res)
+sharedEmitter.on('response', ({ protocol, ep, method, path, payload, options }) => {
+  if(path != "/.well-known/core"){
+    console.log(`[Event] Client response ${protocol}: ${ep}/${method}${path}`);
+    if(payload != null)
+      console.log(`[Event] Client payload ${payload}`);
   }else{
-    console.log(`[Server] Payload received: ${payload}`);
-    if (!observe) console.log('[Server] End of response');
+    //console.log(payload)
   }
+
+});
+
+sharedEmitter.on('error', (error) => {
+  console.log(error);
+});
+
+// Define a validation function
+function validateRegistration(ep, options) {
+  console.log(`[Validation] Validating registration for endpoint: ${ep}`);
+  
+  // Example validation logic
+  if (!ep || ep.length < 3) {
+    console.error(`[Validation Failed] Endpoint "${ep}" is invalid`);
+    return false;
+  }
+
+  // Add more custom validation logic as needed
+  return true;
+}
+
+startLwM2MCoapServer(validation = validateRegistration);
+
+startLwM2MMqttServer('mqtt://broker.hivemq.com', {
+  port: 1883,
+  username: 'myuser',
+  password: 'mypassword',
+  clientId: 'myLwM2MMqttServer',
+}).then((mqttClient) => {
+  console.log('MQTT LwM2M server is running.');
+}).catch((err) => {
+  console.error('Failed to start MQTT LwM2M server:', err.message);
 });
 
 
 setInterval(()=>{
-  console.log('[Server] Registered clients:', registry.listClients());
+  console.log('[Server] Registered clients:', listClients());
 },60000)
+
+

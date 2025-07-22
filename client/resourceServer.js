@@ -30,8 +30,6 @@ const {
   handleCreateRequest 
 } = require('./routes');
 
-const { encodeResourcesToCBOR } = require('../utils/cbor');
-
 function startResourceServer(port = 56830) {
   const observers = getObservers();
 
@@ -52,8 +50,10 @@ function startResourceServer(port = 56830) {
       return handleCreateRequest(req, res, { objectId, instanceId });
     }
 
+    console.log("get resource:",objectId,instanceId,resourceId);
     const resource = getResource(objectId, instanceId, resourceId);
 
+    console.log(resource)
     if (!resource) {
       res.code = '4.04';
       return res.end('Resource not found');
@@ -76,4 +76,4 @@ function startResourceServer(port = 56830) {
   return server;
 }
 
-module.exports = { startResourceServer, getResource, stopObservation };
+module.exports = { startResourceServer };

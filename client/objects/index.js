@@ -24,7 +24,7 @@ function getObjectModule(objectId) {
 function getResource(objectId, instanceId, resourceId) {
   const mod = getObjectModule(objectId);
   if (!mod?.instances || !mod.instances[instanceId]) return null;
-  return mod.instances[instanceId].resources[resourceId] || null;
+  return mod?.instances?.[instanceId]?.resources[resourceId] || null;
 }
 
 function getResourceSet(objectId, instanceId) {

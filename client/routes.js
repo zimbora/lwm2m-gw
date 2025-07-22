@@ -2,6 +2,8 @@
 
 const { encodeResourcesToCBOR, decodeCBOR } = require('../utils/cbor');
 const { encodeTLV, decodeTLV } = require('../utils/tlv');
+const PayloadCodec = require('../utils/payloadCodec');
+const CONTENT_FORMATS = require('../utils/contentFormats');
 const { sendNotification, stopObservation } = require('./transport/coapServer');
 const { getObjectModule,getResource,getResourceSet } = require('./objects');
 
@@ -39,13 +41,14 @@ function handleDiscoveryRequest(res) {
 function handleGetRequest(req, res, { objectId, instanceId, resourceId, resource, observers, path }) {
   const value = typeof resource.value === 'function' ? resource.value() : resource.value;
 
-  if (req.headers?.Observe !== undefined) {
+  if (req.headers?.observe !== undefined || req.headers?.Observe !== undefined) {
     if (!resource?.observable) {
       res.code = '4.05';
       return res.end('Observe not allowed');
     }
 
-    if (req.headers.Observe) {
+    if (req.headers?.observe == 0 || req.headers?.Observe == 0) {
+      console.log(`start observation for:${objectId,instanceId,resourceId}`);
       res.setOption('Observe', 0);
       res.end(String(value));
 
@@ -88,13 +91,13 @@ function handleGetRequest(req, res, { objectId, instanceId, resourceId, resource
 
     const accept = req.headers.Accept;
 
-    if (accept === 'application/cbor') {
-      const encoded = encodeResourcesToCBOR({ [resourceId]: resource });
-      res.setOption('Content-Format', 'application/cbor');
+    if (accept === CONTENT_FORMATS.cbor || accept == 62) {
+      const encoded = PayloadCodec.encode({ [resourceId]: resource },CONTENT_FORMATS.cbor);
+      res.setOption('Content-Format', CONTENT_FORMATS.cbor);
       res.end(encoded);
-    } else if (accept === 'application/vnd.oma.lwm2m+tlv') {
-      const encoded = encodeTLV(resourceId, value, resource.type);
-      res.setOption('Content-Format', 'application/vnd.oma.lwm2m+tlv');
+    } else if (accept === CONTENT_FORMATS.tlv || accept == 60) {
+      const encoded = PayloadCodec.encode({resourceId, value},CONTENT_FORMATS.tlv);
+      res.setOption('Content-Format', CONTENT_FORMATS.tlv);
       res.end(encoded);
     } else {
       res.end(String(value));
@@ -111,8 +114,8 @@ function handlePutRequest(req, res, { objectId, instanceId, resourceId, resource
   const format = req.headers['Content-Format'];
   const resources = getResourceSet(objectId, instanceId);
 
-  if (format === 'application/cbor') {
-    decodeCBOR(req.payload).then(decoded => {
+  if (format === CONTENT_FORMATS.cbor || format == 62) {
+    PayloadCodec.decode(req.payload,CONTENT_FORMATS.cbor).then(decoded => {
       for (const [id, val] of Object.entries(decoded)) {
         if (resources[id]?.writable) resources[id].value = val;
       }
@@ -122,9 +125,9 @@ function handlePutRequest(req, res, { objectId, instanceId, resourceId, resource
       res.code = '4.00';
       res.end('Bad CBOR');
     });
-  } else if (format === 'application/vnd.oma.lwm2m+tlv') {
+  } else if (format === CONTENT_FORMATS.tlv || format == 60) {
     try {
-      const decoded = decodeTLV(req.payload);
+      const decoded = PayloadCodec.decode(req.payload,CONTENT_FORMATS.tlv);
       for (const [id, val] of Object.entries(decoded)) {
         if (resources[id]?.writable) resources[id].value = val;
       }
@@ -136,7 +139,12 @@ function handlePutRequest(req, res, { objectId, instanceId, resourceId, resource
     }
   } else {
     const newValue = req.payload.toString();
-    resource.value = newValue;
+    console.log("Update resource with value:", newValue);
+    if(resource.type != 'string')
+      resource.value = Number(newValue);
+    else
+      resource.value = newValue;
+    console.log(resource);
     res.code = '2.04';
     res.end();
 
@@ -193,8 +201,8 @@ function handleCreateRequest(req, res, { objectId, newInstanceId = 1 }) {
 
   let resources = objectInstances[instanceKey];
 
-  if (format === 'application/cbor') {
-    return decodeCBOR(req.payload).then(decoded => {
+  if (format === CONTENT_FORMATS.cbor || format == 62 ) {
+    return PayloadCodec.decode(req.payload,CONTENT_FORMATS.cbor).then(decoded => {
       Object.assign(resources, decoded);
       res.code = '2.01';
       res.setOption('Location-Path', `/${objectId}/${newInstanceId}`);
@@ -205,9 +213,9 @@ function handleCreateRequest(req, res, { objectId, newInstanceId = 1 }) {
     });
   }
 
-  if (format === 'application/vnd.oma.lwm2m+tlv') {
+  if (format === CONTENT_FORMATS.tlv || format == 60) {
     try {
-      const decoded = decodeTLV(req.payload);
+      const decoded = PayloadCodec.decode(req.payload,CONTENT_FORMATS.tlv);
       Object.assign(resources, decoded);
       res.code = '2.01';
       res.setOption('Location-Path', `/${objectId}/${newInstanceId}`);

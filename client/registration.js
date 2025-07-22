@@ -60,7 +60,7 @@ function updateRegistration(host, port = 5683, timeoutMs = 300) {
     const req = coap.request({
       hostname: host,
       port,
-      method: 'POST',
+      method: 'PUT',
       pathname: registrationLocation,
       confirmable: true,
     });

@@ -9,8 +9,8 @@ function getClient(ep) {
 }
 
 function updateClient(locationPath, info) {
-  for (const [ep, info] of clients.entries()) {
-    if (info.location === locationPath) {
+  for (const [ep, clientInfo] of clients.entries()) {
+    if (clientInfo.location === locationPath) {
       clients.set(ep, { ...clients.get(ep), ...info });
       return ep;
     }

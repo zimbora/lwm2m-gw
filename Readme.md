@@ -49,9 +49,12 @@ This project implements a Lightweight Machine to Machine (LwM2M) client and serv
 | Manual Notification Push             | ✅ Interval-based observe         | ✅ Receives notifications           | 🛑 Not Covered  |
 |                                      |                                   |                                     |                 |
 | **Data Formats**                     |                                   |                                     |                 |
-| Text Format (`Content-Format: 0`)    | ✅ Default/fallback               | ✅ Default/fallback                 | 🛑 Not Covered  |
-| CBOR Support (`Content-Format: 60`)  | ✅ Encode/decode (⚠️ untested)    | ✅ Encode/decode (⚠️ untested)      | ✅ Covered      |
-| TLV Support (`Content-Format: 11542`)| ✅ Encode/decode (⚠️ untested)    | ✅ Encode/decode (⚠️ untested)      | ✅ Covered      |
+| Text Format (`Content-Format: 0`)    | ✅ Default/fallback               | ✅ Default/fallback                 | ✅ Covered      |
+| Link Format (`Content-Format: 40`)   | ✅ Encode/decode (⚠️ untested)    | ✅ Encode/decode 			         | ✅ Covered      |
+| JSON Format (`Content-Format: 50`)   | ✅ Encode/decode (⚠️ untested)    | ✅ Encode/decode 			         | ✅ Covered      |
+| TLV LwM2M (`Content-Format: 60`)     | ✅ Encode/decode (⚠️ untested)    | ✅ Encode/decode                    | ✅ Covered      |
+| JSON LwM2M (`Content-Format: 61`)    | ✅ Encode/decode (⚠️ untested)    | ✅ Encode/decode                    | ✅ Covered      |
+| CBOR LwM2M (`Content-Format: 62`)    | ✅ Encode/decode (⚠️ untested)    | ✅ Encode/decode 			         | ✅ Covered      |
 |                                      |                                   |                                     |                 |
 | **Transport Layers**                 |                                   |                                     |                 |
 | COAP                                 | ✅ Default                        | ✅ Default                          | 🛑 Not Covered  |
