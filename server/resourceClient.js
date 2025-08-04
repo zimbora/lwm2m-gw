@@ -15,6 +15,14 @@ const {
 const coapEnabled = true;
 const mqttEnabled = false;
 
+function startLwM2MDTLSCoapServer(validation, port = 5684) {
+
+  const server = coap.createServer((req, res) => {
+
+  });
+  return server;
+}
+
 // === method to initialize client based on protocol ===
 function startLwM2MCoapServer(validation, port = 5683) {
   const server = coap.createServer((req, res) => {
@@ -278,6 +286,7 @@ function createRequest(ep, parentPath, payload, format = 'text') {
 
 
 module.exports = {
+  startLwM2MDTLSCoapServer,
   startLwM2MCoapServer,
   startLwM2MMqttServer,
   discoveryRequest,
