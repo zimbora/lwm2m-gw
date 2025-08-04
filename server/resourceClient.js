@@ -1,5 +1,6 @@
 // server/resourceClient.js
 const coap = require('coap');
+const dtls = require('node-mbed-dtls');
 const sharedEmitter = require('./transport/sharedEmitter');
 const { sendCoapRequest } = require('./transport/coapClient');
 const { connectMqttClient, sendMqttRequest } = require('./transport/mqttClient');
@@ -97,6 +98,187 @@ function startLwM2MCoapServer(validation, port = 5683) {
   });
 
   return server;
+}
+
+// === method to initialize DTLS-enabled client ===
+function startLwM2MDTLSCoapServer(validation, options = {}) {
+  const port = options.port || 5684; // Standard CoAPS (DTLS) port
+  const keyPath = options.keyPath || './server.key';
+  const certPath = options.certPath || './server.crt';
+  
+  // Check if certificate files exist
+  const fs = require('fs');
+  if (!fs.existsSync(keyPath)) {
+    throw new Error(`DTLS private key file not found: ${keyPath}. Please provide a valid RSA private key file.`);
+  }
+  if (!fs.existsSync(certPath)) {
+    throw new Error(`DTLS certificate file not found: ${certPath}. Please provide a valid X.509 certificate file.`);
+  }
+  
+  try {
+    const dtlsOptions = {
+      key: keyPath,
+      cert: certPath
+    };
+    
+    const dtlsServer = dtls.createServer(dtlsOptions);
+    
+    dtlsServer.on('secureConnection', (socket) => {
+      console.log(`[DTLS] New secure connection from ${socket.remoteAddress}:${socket.remotePort}`);
+      
+      socket.on('data', (buffer) => {
+        try {
+          // Parse the CoAP message from the decrypted DTLS payload
+          const packet = coap.parse(buffer);
+          const path = packet.url?.split('?')[0] || '/';
+          const method = packet.code;
+          
+          // Create a mock request/response object compatible with existing handlers
+          const req = {
+            url: packet.url,
+            method: method,
+            payload: packet.payload,
+            headers: {},
+            _packet: packet
+          };
+          
+          // Convert packet options to headers for compatibility
+          if (packet.options) {
+            packet.options.forEach(option => {
+              switch (option.name) {
+                case 'Observe':
+                  req.headers.Observe = option.value;
+                  req.headers.observe = option.value;
+                  break;
+                case 'Content-Format':
+                  req.headers['Content-Format'] = option.value;
+                  break;
+              }
+            });
+          }
+          
+          const res = {
+            code: '2.05',
+            payload: null,
+            end: function(data) {
+              // Create CoAP response packet
+              const responsePacket = {
+                messageId: packet.messageId,
+                token: packet.token,
+                code: this.code,
+                payload: data || this.payload || Buffer.alloc(0)
+              };
+              
+              // Generate CoAP response buffer
+              const responseBuffer = coap.generate(responsePacket);
+              
+              // Send encrypted response through DTLS socket
+              socket.write(responseBuffer);
+            }
+          };
+          
+          // Route to appropriate handler based on method and path
+          if (method === 'POST' && path === '/rd') {
+            handleRegister(req, res, 'dtls', validation)
+              .then(({ ep, location }) => {
+                sharedEmitter.emit('registration', { protocol: 'dtls', ep, location });
+              })
+              .catch((err) => {
+                console.error(`[DTLS Server] Register error: ${err.message}`);
+              });
+
+          } else if (method === 'PUT' && path.startsWith('/rd/')) {
+            handleUpdate(req, res, path)
+              .then(({ ep, location }) => {
+                sharedEmitter.emit('update', { protocol: 'dtls', ep, location });
+              })
+              .catch((err) => {
+                console.error(`[DTLS Server] Update error: ${err.message}`);
+              });
+
+          } else if (method === 'DELETE' && path.startsWith('/rd/')) {
+            handleDeregister(req, res, path)
+              .then(({ ep }) => {
+                sharedEmitter.emit('deregistration', { protocol: 'dtls', ep });
+              })
+              .catch((err) => {
+                console.error(`[DTLS Server] Deregister error: ${err.message}`);
+              });
+              
+          } else if (method === 'GET' && (req?.headers?.observe !== undefined || req?.headers?.Observe !== undefined)) {
+            try {
+              const { confirmable, token, options: packetOptions } = req._packet;
+              const decodedToken = Buffer.from(token).toString('hex');
+              const decodedPayload = PayloadCodec.decode(req?.payload, 'text/plain');
+
+              const observation = getObservation(decodedToken);
+
+              // Emit the observation with useful details
+              sharedEmitter.emit('observation', {
+                protocol: 'dtls',
+                token: decodedToken,
+                ep: observation?.ep,
+                method,
+                path: observation?.path,
+                payload: decodedPayload
+              });
+
+              if (!observation) {
+                const error = `Observation is not registered for token ${decodedToken}`;
+                res.code = '5.00';
+                res.end('Observation token is not registered');
+                sharedEmitter.emit('error', {
+                  error
+                });
+                return;
+              }
+
+              // Reply to confirmable observe request
+              if (confirmable) {
+                res.end(); // Empty ACK
+              }
+
+            } catch (err) {
+              console.error(`[DTLS Observation] Error handling observation:`, err);
+              res.code = '5.00';
+              res.end('Observation handler failed');
+            }
+            
+          } else {
+            res.code = '4.04';
+            res.end('Not Found');
+          }
+          
+        } catch (err) {
+          console.error(`[DTLS Server] Error processing CoAP message:`, err);
+        }
+      });
+      
+      socket.on('error', (err) => {
+        console.error(`[DTLS] Socket error: ${err.message}`);
+      });
+      
+      socket.on('close', () => {
+        console.log(`[DTLS] Connection closed`);
+      });
+    });
+    
+    dtlsServer.listen(port, () => {
+      console.log(`[DTLS] LwM2M Server listening on port ${port}`);
+    });
+    
+    dtlsServer.on('error', (err) => {
+      console.error(`[DTLS Server] Error: ${err.message}`);
+    });
+    
+    return dtlsServer;
+    
+  } catch (err) {
+    console.error(`[DTLS Server] Failed to create server: ${err.message}`);
+    console.error(`[DTLS Server] Make sure you have valid RSA private key and X.509 certificate files.`);
+    console.error(`[DTLS Server] Generate them with: openssl req -x509 -newkey rsa:2048 -keyout server.key -out server.crt -days 365 -nodes`);
+    throw err;
+  }
 }
 
 function startLwM2MMqttServer(brokerUrl, mqttOptions = {}) {
@@ -279,6 +461,7 @@ function createRequest(ep, parentPath, payload, format = 'text') {
 
 module.exports = {
   startLwM2MCoapServer,
+  startLwM2MDTLSCoapServer,
   startLwM2MMqttServer,
   discoveryRequest,
   getRequest,
