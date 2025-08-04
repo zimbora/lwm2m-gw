@@ -20,29 +20,29 @@ This project implements a Lightweight Machine to Machine (LwM2M) client and serv
 
 ## ✅ LwM2M Node.js Capabilities Overview
 
-| Feature                              | 🌐 Client                         | 🖥️ Server                           | ✅ Tests        |
+| Feature                              | 🌐 Client                         | 🖥️ Server                           | ✅ Auto Tests   |
 |--------------------------------------|-----------------------------------|-------------------------------------|-----------------|
 | **Bootstrap Server**                 |                                   |                                     |                 |
 | To be defined                        | 🕐 Planned                        | 🕐 Planned                          | 🛑 Not Covered  |
 |                                      |                                   |                                     |                 |
 | **Server**                           |                                   |                                     |                 |
-| LwM2M Registration (`/rd`)           | ✅ Sends registration             | ✅ Handles registration             | 🟡 Server	   |
-| Registration Update (`/rd/{id}`)     | ✅ Supports                       | ✅ Handles update                   | 🛑 Not Covered  |
-| Deregistration                       | ✅ Sends                          | ✅ Handles deregistration           | 🛑 Not Covered  |
+| LwM2M Registration (`/rd`)           | ✅ Sends registration             | ✅ Handles registration             | ✅ Covered	   |
+| Registration Update (`/rd/{id}`)     | ✅ Supports                       | ✅ Handles update                   | ✅ Covered      |
+| Deregistration                       | ✅ Sends                          | ✅ Handles deregistration           | ✅ Covered      |
 | Error Detection / Retry              | ✅ Logs failures                  | ✅ Detects connection loss          | 🛑 Not Covered  |
-| Event-Driven Responses               | 🕐 Planned                        | ✅ Emits payload per request        | 🛑 Not Covered  |
+| Event-Driven Responses               | 🕐 Planned                        | ✅ Emits payload per request        | 🟡 server       |
 |                                      |                                   |                                     |                 |
 | **Object Model / Discovery**         |                                   |                                     |                 |
 | Built-in Objects (0–6 + 3303)        | ✅ Fully implemented              | 🕐 Used via client introspection    | 🛑 Not Covered  |
-| Well-Known Core Discovery            | ✅ Responds with `</x/y/z>;attr`  | ✅ Parses and lists resources       | 🛑 Not Covered  |
+| Well-Known Core Discovery            | ✅ Responds with `</x/y/z>;attr`  | ✅ Parses and lists resources       | 🟡 server       |
 | Resource Metadata (R/W/X/Obs/Units)  | ✅ Defined per object             | ✅ Discoverable via `/core`         | 🛑 Not Covered  |
 | Multiple Instances                   | 🕐 Planned                        | 🕐 Planned                          | 🛑 Not Covered  |
 |                                      |                                   |                                     |                 |
 | **Resource Access**                  |                                   |                                     |                 |
-| Resource Read                        | ✅ Responds with value            | ✅ Sends GET request                | 🛑 Not Covered  |
-| Resource Write                       | ✅ Accepts PUT                    | ✅ Sends PUT                        | 🛑 Not Covered  |
-| Resource Execute                     | ✅ Handles function call          | ✅ Sends POST                       | 🛑 Not Covered  |
-| Resource Observation                 | ✅ Manages and sends notifications| ✅ Sends GET with Observe=0         | 🛑 Not Covered  |
+| Resource Read                        | ✅ Responds with value            | ✅ Sends GET request                | ✅ Covered      |
+| Resource Write                       | ✅ Accepts PUT                    | ✅ Sends PUT                        | ✅ Covered      |
+| Resource Execute                     | ✅ Handles function call          | ✅ Sends POST                       | ✅ Covered      |
+| Resource Observation                 | ✅ Manages and sends notifications| ✅ Sends GET with Observe=0         | ✅ Covered      |
 | Resource Write attribute             | 🟡 Partially                      | 🛑 Not yet                          | 🛑 Not Covered  |
 | Object,InstanceId Create             | 🟡 Partially                      | 🛑 Not yet                          | 🛑 Not Covered  |
 | Object,InstaceId Delete              | 🟡 Partially                      | 🛑 Not yet                          | 🛑 Not Covered  |
