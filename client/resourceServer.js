@@ -27,8 +27,10 @@ const {
   handlePutRequest, 
   handlePostRequest,
   handleDeleteRequest,
-  handleCreateRequest 
+  handleCreateRequest,
+  handleProvisionCompleted
 } = require('./routes');
+
 
 function startResourceServer(port = 56830) {
   const observers = getObservers();
@@ -38,22 +40,24 @@ function startResourceServer(port = 56830) {
       return handleDiscoveryRequest(res);
     }
 
+    $.logger.info(`method:${req.method} url:${req.url}`);
     let path = Array.isArray(req.url) ? req.url.join('/') : req.url;
     path = (path || '').replace(/^\/+/, '');
     const segments = path.split('/');
     const [objectId, instanceId, resourceId] = segments.map(Number);
 
-    // Create Instance (POST on /<objectId>)
-    if (req.method === 'POST' && segments.length === 1) {
+    // Bootstrap methods
+    if(req.method === 'POST' && req.url === '/bs') {
+      return handleProvisionCompleted(req,res);
+    }else if (req.method === 'POST' && segments.length === 1) {
       return handleCreateRequest(req, res, { objectId });
     }else if (req.method === 'POST' && segments.length === 2) {
       return handleCreateRequest(req, res, { objectId, instanceId });
     }
 
-    console.log("get resource:",objectId,instanceId,resourceId);
+    $.logger.info("get resource:",objectId,instanceId,resourceId);
     const resource = getResource(objectId, instanceId, resourceId);
 
-    console.log(resource)
     if (!resource) {
       res.code = '4.04';
       return res.end('Resource not found');

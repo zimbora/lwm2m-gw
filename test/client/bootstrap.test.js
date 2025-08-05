@@ -38,10 +38,10 @@ describe('Bootstrap Client', () => {
 
   afterAll((done) => {
     if (mockServer) {
-      mockServer.close(done);
-    } else {
-      done();
+      mockServer.close();
     }
+
+    done();
   });
 
   test('should successfully request bootstrap', async () => {

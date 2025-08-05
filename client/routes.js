@@ -5,7 +5,7 @@ const { encodeTLV, decodeTLV } = require('../utils/tlv');
 const PayloadCodec = require('../utils/payloadCodec');
 const CONTENT_FORMATS = require('../utils/contentFormats');
 const { sendNotification, stopObservation } = require('./transport/coapServer');
-const { getObjectModule,getResource,getResourceSet } = require('./objects');
+const { getObjectModule,getResource,getResourceSet, addInstance } = require('./objects');
 
 function handleDiscoveryRequest(res) {
   const links = [];
@@ -48,7 +48,7 @@ function handleGetRequest(req, res, { objectId, instanceId, resourceId, resource
     }
 
     if (req.headers?.observe == 0 || req.headers?.Observe == 0) {
-      console.log(`start observation for:${objectId,instanceId,resourceId}`);
+      $.logger.info(`start observation for:${objectId,instanceId,resourceId}`);
       res.setOption('Observe', 0);
       res.end(String(value));
 
@@ -139,12 +139,12 @@ function handlePutRequest(req, res, { objectId, instanceId, resourceId, resource
     }
   } else {
     const newValue = req.payload.toString();
-    console.log("Update resource with value:", newValue);
+
     if(resource.type != 'string')
       resource.value = Number(newValue);
     else
       resource.value = newValue;
-    console.log(resource);
+
     res.code = '2.04';
     res.end();
 
@@ -170,41 +170,67 @@ function handlePostRequest(req, res, { resource }) {
 
 function handleDeleteRequest(req, res, { objectId, instanceId, resourceId, resource }) {
   
-  if (!resource?.deletable) {
-    res.code = '4.05'; // Method Not Allowed
-    return res.end('Delete not allowed');
-  }
-
   // Perform the deletion logic here, e.g. remove resource or clear its value
   // This depends on your resource structure
   // For demonstration, just set value to null:
-  resource.value = null;
+  $.logger.info("handling Delete Request")
 
-  res.code = '2.02'; // Deleted
+  if (!resourceId && resource) {
+    Object.keys(resource).forEach((key) => {
+      if(resource[key]?.value){
+        resource[key].value = null;
+        res.code = '2.02';
+      }
+    });
+
+  }else if(resource){
+    if(resource?.deletable && resource?.value){
+      resource.value = null;
+      res.code = '2.02'; // Deleted
+    }else{
+      res.code = '4.05'; // Method Not Allowed
+      return res.end('Delete not allowed');
+    }
+  }else{
+    res.code = '4.05'; // Method Not Allowed
+    return res.end('Object or resource not valid');
+  }
+
   res.end();
 }
 
-function handleCreateRequest(req, res, { objectId, newInstanceId = 1 }) {
+function handleCreateRequest(req, res, { objectId, newInstanceId }) {
 
-  // TODO..
-  // Multiple instances needed to be supported
+  $.logger.info(`handling Creating Request ${objectId}/${newInstanceId}`);
+
   const format = req.headers['Content-Format'];
-  const instanceKey = `${objectId}:${newInstanceId}`;
 
-  // Initialize instance if not already
-  const objectInstances = getObjectModule(objectId);
-  if(objectInstances == null){
+  let instanceId = null;
+  try{
+    instanceId = addInstance(objectId,newInstanceId)
+  }catch(err){
     res.code = '5.04';
-    return res.end('Object not available');
+    return res.end(`Object not available or couldn't create a new instance`);
   }
-  if (!objectInstances[instanceKey]) objectInstances[instanceKey] = {};
 
-  let resources = objectInstances[instanceKey];
+  let instance = null;
+  try{
+    instance = getResource(objectId,instanceId);
+  }catch(err){
+    res.code = '5.04';
+    return res.end(`Error getting new instance`);
+  }
 
   if (format === CONTENT_FORMATS.cbor || format == 62 ) {
     return PayloadCodec.decode(req.payload,CONTENT_FORMATS.cbor).then(decoded => {
-      Object.assign(resources, decoded);
-      res.code = '2.01';
+      // Assuming decoded is an object like { resourceId: { value: ... }, ... }
+      Object.entries(decoded).forEach(([key]) => {
+        if (instance && instance[key] && instance[key].hasOwnProperty("value")) {
+          // Update the resource's value
+          instance[key].value = decoded[key];
+        }
+      });
+      res.code = '2.01'; // Created or updated
       res.setOption('Location-Path', `/${objectId}/${newInstanceId}`);
       res.end();
     }).catch(() => {
@@ -214,20 +240,34 @@ function handleCreateRequest(req, res, { objectId, newInstanceId = 1 }) {
   }
 
   if (format === CONTENT_FORMATS.tlv || format == 60) {
-    try {
-      const decoded = PayloadCodec.decode(req.payload,CONTENT_FORMATS.tlv);
-      Object.assign(resources, decoded);
-      res.code = '2.01';
+    return PayloadCodec.decode(req.payload,CONTENT_FORMATS.tlv).then(decoded => {
+      // Assuming decoded is an object like { resourceId: { value: ... }, ... }
+      Object.entries(decoded).forEach(([key]) => {
+        if (instance && instance[key] && instance[key].hasOwnProperty("value")) {
+          // Update the resource's value
+          instance[key].value = decoded[key];
+        }
+      });
+      res.code = '2.01'; // Created or updated
       res.setOption('Location-Path', `/${objectId}/${newInstanceId}`);
       res.end();
-    } catch {
+    }).catch(() => {
       res.code = '4.00';
       res.end('Bad TLV');
-    }
+    });
   } else {
     res.code = '4.15';
-    res.end('Unsupported content format');
+    return res.end('Unsupported content format');
   }
+  
+}
+
+function handleProvisionCompleted(req, res) {
+
+  $.client.provisioned = true;
+
+  res.code = '2.01'; // Completed
+  return res.end();
 }
 
 module.exports = { 
@@ -236,5 +276,6 @@ module.exports = {
   handlePutRequest, 
   handlePostRequest, 
   handleDeleteRequest,
-  handleCreateRequest 
+  handleCreateRequest,
+  handleProvisionCompleted
 };

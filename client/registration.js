@@ -5,7 +5,7 @@ const { getSocket } = require('./resourceServer');
 
 let registrationLocation = null;
 
-function registerToServer(endpointName, serverHost, serverPort, timeoutMs = 300) {
+function registerToServer(endpointName, serverHost, serverPort, localPort = 5683, timeoutMs = 300 ) {
   return new Promise((resolve, reject) => {
     //const agent = new coap.Agent({ socket: getSocket() }); // share server socket
     const agent = new coap.Agent(); // share server socket
@@ -15,7 +15,7 @@ function registerToServer(endpointName, serverHost, serverPort, timeoutMs = 300)
       port: serverPort,
       pathname: '/rd',
       method: 'POST',
-      query: `ep=${endpointName}&lt=300&b=U`,
+      query: `ep=${endpointName}&lt=300&b=U&port=${localPort}`,
       agent
     });
 
