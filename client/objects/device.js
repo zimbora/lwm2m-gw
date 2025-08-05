@@ -1,9 +1,8 @@
 // client/objects/device.js
 module.exports = {
   id: 3,
-  instances: 
-  [ 
-    {
+  instances: {
+    0: {
       resources: {
         0: { name: 'Manufacturer', value: 'NodeCoAP Inc.', type: 'string', readable: true },
         1: { name: 'Model Number', value: 'NC-01', type: 'string', readable: true },
@@ -17,5 +16,5 @@ module.exports = {
         16: { name: 'Supported Binding and Modes', value: 'U', type: 'string', readable: true }
       }  
     }
-  ]
+  }
 };

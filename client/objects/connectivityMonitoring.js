@@ -1,9 +1,8 @@
 // client/objects/connectivityMonitoring.js
 module.exports = {
   id: 4,
-  instances:
-  [
-    {
+  instances: {
+    0: {
       resources: {
         0: { name: 'Network Bearer', value: 0, type: 'integer', readable: true },
         1: { name: 'Available Network Bearer', value: [0, 3], type: 'opaque', readable: true },
@@ -17,5 +16,5 @@ module.exports = {
         12: { name: 'SMCC', value: 268, type: 'integer', readable: true }
       }
     }
-  ]
+  }
 };

@@ -50,6 +50,7 @@ function handleGetRequest(req, res, { objectId, instanceId, resourceId, resource
     if (req.headers?.observe == 0 || req.headers?.Observe == 0) {
       $.logger.info(`start observation for:${objectId,instanceId,resourceId}`);
       res.setOption('Observe', 0);
+      res.code = '2.05';
       res.end(String(value));
 
       if (!observers[path]) observers[path] = [];
@@ -94,12 +95,15 @@ function handleGetRequest(req, res, { objectId, instanceId, resourceId, resource
     if (accept === CONTENT_FORMATS.cbor || accept == 62) {
       const encoded = PayloadCodec.encode({ [resourceId]: resource },CONTENT_FORMATS.cbor);
       res.setOption('Content-Format', CONTENT_FORMATS.cbor);
+      res.code = '2.05';
       res.end(encoded);
     } else if (accept === CONTENT_FORMATS.tlv || accept == 60) {
       const encoded = PayloadCodec.encode({resourceId, value},CONTENT_FORMATS.tlv);
       res.setOption('Content-Format', CONTENT_FORMATS.tlv);
+      res.code = '2.05';
       res.end(encoded);
     } else {
+      res.code = '2.05';
       res.end(String(value));
     }
   }

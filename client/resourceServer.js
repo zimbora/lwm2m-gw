@@ -44,7 +44,9 @@ function startResourceServer(port = 56830) {
     let path = Array.isArray(req.url) ? req.url.join('/') : req.url;
     path = (path || '').replace(/^\/+/, '');
     const segments = path.split('/');
-    const [objectId, instanceId, resourceId] = segments.map(Number);
+    const objectId = segments[0] ? parseInt(segments[0]) : null;
+    const instanceId = segments[1] ? parseInt(segments[1]) : null;
+    const resourceId = segments[2] ? parseInt(segments[2]) : null;
 
     // Bootstrap methods
     if(req.method === 'POST' && req.url === '/bs') {

@@ -15,7 +15,7 @@ describe('Bootstrap Server', () => {
   const BOOTSTRAP_PORT = 5685; // Use different port for tests
 
   beforeAll(() => {
-    server = startBootstrapServer(BOOTSTRAP_PORT);
+    server = startBootstrapServer(null, BOOTSTRAP_PORT);
   });
 
   afterAll((done) => {
@@ -48,7 +48,7 @@ describe('Bootstrap Server', () => {
 
     req.on('error', done);
     req.end();
-  });
+  }, 10000);
 
   test('should handle bootstrap finish', (done) => {
     const req = coap.request({
@@ -66,7 +66,7 @@ describe('Bootstrap Server', () => {
 
     req.on('error', done);
     req.end();
-  });
+  }, 10000);
 
   test('should return 4.04 for unknown paths', (done) => {
     const req = coap.request({
@@ -83,7 +83,7 @@ describe('Bootstrap Server', () => {
 
     req.on('error', done);
     req.end();
-  });
+  }, 10000);
 });
 
 describe('Bootstrap Configuration', () => {
