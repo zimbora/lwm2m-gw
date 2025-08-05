@@ -1,7 +1,7 @@
 // client/transport/dtlsServer.js
 
 const dtls = require('node-mbed-dtls');
-const coap = require('coap');
+const packet = require('coap-packet');
 const path = require('path');
 
 let server;
@@ -22,8 +22,8 @@ function createServer(handler, port = 56830, options = {}) {
     socket.on('data', (data) => {
       try {
         // Process incoming CoAP message over DTLS
-        // We need to parse the CoAP packet and create a request/response object similar to what coap.createServer does
-        const parsed = coap.parse(data);
+        // Parse the CoAP packet using coap-packet library
+        const parsed = packet.parse(data);
         if (!parsed) {
           $.logger.error('[Client] Failed to parse CoAP message over DTLS');
           return;
@@ -31,9 +31,9 @@ function createServer(handler, port = 56830, options = {}) {
 
         // Create a CoAP request-like object
         const req = {
-          method: parsed.method,
-          url: parsed.url,
-          headers: parsed.options,
+          method: parsed.code,
+          url: parsed.url || '/',
+          headers: {},
           payload: parsed.payload,
           code: parsed.code,
           token: parsed.token,
@@ -41,6 +41,26 @@ function createServer(handler, port = 56830, options = {}) {
           ack: parsed.ack,
           reset: parsed.reset
         };
+
+        // Convert options to headers format
+        if (parsed.options) {
+          parsed.options.forEach(opt => {
+            if (opt.name === 'Uri-Path') {
+              // Build URL from Uri-Path options
+              if (!req.url || req.url === '/') {
+                req.url = '';
+              }
+              req.url += '/' + opt.value.toString();
+            } else {
+              req.headers[opt.name] = opt.value;
+            }
+          });
+        }
+
+        // Ensure URL starts with /
+        if (!req.url.startsWith('/')) {
+          req.url = '/' + req.url;
+        }
 
         // Create a CoAP response-like object
         const res = {
@@ -54,9 +74,9 @@ function createServer(handler, port = 56830, options = {}) {
             this.payload = payload;
             // Send CoAP response back over DTLS
             try {
-              const response = coap.generate({
+              const response = packet.generate({
                 code: this.code,
-                payload: this.payload,
+                payload: Buffer.from(this.payload || ''),
                 options: this.options,
                 token: req.token,
                 messageId: req.messageId,

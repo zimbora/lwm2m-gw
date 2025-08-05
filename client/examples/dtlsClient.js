@@ -8,31 +8,38 @@ $.client = {};
 $.client['registered'] = false;
 
 const { startDtlsResourceServer } = require('../dtlsResourceServer');
-const { registerToServer, updateRegistration, deregister } = require('../registration');
 
 const endpointName = 'node-dtls-client-001';
-const serverHost = 'localhost';
-const serverPort = 5684; // Different port for DTLS server
-const localPort = 56831; // Different local port for DTLS client
-
-const RETRY_INTERVAL = 10000; // Every 10s
-let updateTimer = null;
+const localPort = 56831; // DTLS server port
 
 (async () => {
   try {
     // Start DTLS resource server
     $.logger.info('[DTLS Client] Starting DTLS resource server...');
-    startDtlsResourceServer(localPort);
+    
+    const dtlsOptions = {
+      // Use default certificate for testing
+      // In production, you would use proper certificates
+      debug: 0, // Set to higher values for more debug output
+      handshakeTimeoutMin: 3000
+    };
+    
+    startDtlsResourceServer(localPort, dtlsOptions);
     $.logger.info('[DTLS Client] DTLS resource server started');
 
-    // For now, we'll just start the DTLS server without trying to register
-    // since we would need a DTLS-enabled LwM2M server to register with
     $.logger.info('[DTLS Client] DTLS client is running and ready to accept secure connections');
     $.logger.info(`[DTLS Client] Listening on port ${localPort} for DTLS connections`);
     
-    // Note: To complete the registration, we would need to implement DTLS client-side
-    // communication to connect to a DTLS-enabled LwM2M server
-    $.logger.info('[DTLS Client] To test: Use a DTLS-enabled CoAP client to connect to this server');
+    // Display information about testing
+    $.logger.info('[DTLS Client] Testing instructions:');
+    $.logger.info('[DTLS Client] 1. Use a DTLS-enabled CoAP client to connect to this server');
+    $.logger.info('[DTLS Client] 2. Example command with libcoap:');
+    $.logger.info(`[DTLS Client]    coap-client -m GET -k path/to/key coaps://localhost:${localPort}/3/0/0`);
+    $.logger.info('[DTLS Client] 3. The server will accept DTLS handshakes and process CoAP/LwM2M requests');
+    $.logger.info('[DTLS Client] 4. Available LwM2M resources include:');
+    $.logger.info('[DTLS Client]    - /3/0/0 (Device Object - Manufacturer)');
+    $.logger.info('[DTLS Client]    - /3303/0/5700 (Temperature Sensor - Sensor Value)');
+    $.logger.info('[DTLS Client]    - /.well-known/core (Resource Discovery)');
 
   } catch (error) {
     $.logger.error(`[DTLS Client] Error: ${error.message}`);
@@ -40,42 +47,13 @@ let updateTimer = null;
   }
 })();
 
-async function monitorServerConnection() {
-  updateTimer = setInterval(async () => {
-    if (!$.client.registered) return;
-
-    try {
-      await updateRegistration(serverHost, serverPort);
-    } catch (error) {
-      $.logger.error(`[DTLS Client] Update failed: ${error.message}`);
-      // Attempt re-registration
-      try {
-        await registerToServer(endpointName, serverHost, serverPort, localPort);
-        $.client.registered = true;
-      } catch (regError) {
-        $.logger.error(`[DTLS Client] Re-registration failed: ${regError.message}`);
-        $.client.registered = false;
-      }
-    }
-  }, RETRY_INTERVAL);
-}
-
 // Graceful shutdown
 process.on('SIGINT', async () => {
   $.logger.info('[DTLS Client] Shutting down...');
-  
-  if (updateTimer) {
-    clearInterval(updateTimer);
-  }
+  process.exit(0);
+});
 
-  if ($.client.registered) {
-    try {
-      await deregister(serverHost, serverPort);
-      $.logger.info('[DTLS Client] Successfully deregistered');
-    } catch (error) {
-      $.logger.error(`[DTLS Client] Deregistration error: ${error.message}`);
-    }
-  }
-
+process.on('SIGTERM', async () => {
+  $.logger.info('[DTLS Client] Shutting down...');
   process.exit(0);
 });
