@@ -5,8 +5,10 @@ function handleRegister(req, res, protocol, validRegistration) {
   return new Promise((resolve, reject) => {
     try {
       const query = new URLSearchParams(req.url.split('?')[1]);
+      console.debug(query);
       const ep = query.get('ep');
       const lt = query.get('lt');
+      const port = query.get('port');
       const binding = query.get('b') || 'U';
 
       if (!ep) {
@@ -25,7 +27,7 @@ function handleRegister(req, res, protocol, validRegistration) {
 
       registerClient(ep, {
         address: req.rsinfo.address,
-        port: 56830,
+        port: port || 5683,
         protocol,
         location,
         lifetime: parseInt(lt),

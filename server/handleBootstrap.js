@@ -1,5 +1,7 @@
 // server/handleBootstrap.js
 const { sendCoapRequest } = require('./transport/coapClient');
+const PayloadCodec = require('../utils/payloadCodec');
+const CONTENT_FORMATS = require('../utils/contentFormats');
 
 /**
  * Bootstrap Configuration Store
@@ -33,11 +35,13 @@ const defaultBootstrapConfig = {
 /**
  * Handle bootstrap request from client
  */
-function handleBootstrapRequest(req, res) {
+function handleBootstrapRequest(req, res, bootstrapDeviceCall) {
   return new Promise(async (resolve, reject) => {
     try {
       const query = new URLSearchParams(req.url.split('?')[1]);
+      console.debug("query:",query)
       const ep = query.get('ep');
+      const port = query.get('port');
 
       if (!ep) {
         res.code = '4.00';
@@ -45,17 +49,31 @@ function handleBootstrapRequest(req, res) {
         return reject(new Error('Missing ep in bootstrap request'));
       }
 
-      // Get or create bootstrap configuration for this endpoint
-      let config = bootstrapConfigurations.get(ep);
-      if (!config) {
-        config = { ...defaultBootstrapConfig };
-        bootstrapConfigurations.set(ep, config);
+      let config = null;
+
+      if (typeof bootstrapDeviceCall === 'function') {
+        try{
+          config = await bootstrapDeviceCall({query:query, ep:ep});
+        }catch(err){
+          console.err(err);
+        }
+      }else{
+        // Get or create bootstrap configuration for this endpoint
+        config = bootstrapConfigurations.get(ep);
+        if (!config) {
+          // Use default config
+          config = { ...defaultBootstrapConfig };
+          bootstrapConfigurations.set(ep, config);
+        }
       }
+
+      //console.log("bootstrap client port:",req.rsinfo.port)
 
       // Store client info for provisioning
       const clientInfo = {
         address: req.rsinfo.address,
-        port: req.rsinfo.port || 56830, // Default client port
+        //port: req.rsinfo.port || 56830, // Default client port
+        port: port || 5683, // Default client port
         ep: ep,
         config: config
       };
@@ -122,9 +140,11 @@ async function provisionClient(clientInfo) {
   const { address, port, ep, config } = clientInfo;
 
   try {
+    
     // Step 1: Delete existing instances (clean slate)
     console.log(`[Bootstrap] Deleting existing security instances for ${ep}`);
     await deleteSecurityInstances(address, port);
+    
 
     console.log(`[Bootstrap] Deleting existing server instances for ${ep}`);
     await deleteServerInstances(address, port);
@@ -146,6 +166,7 @@ async function provisionClient(clientInfo) {
     await sendBootstrapFinish(address, port);
 
     console.log(`[Bootstrap] Successfully provisioned client: ${ep}`);
+
   } catch (error) {
     console.error(`[Bootstrap] Provisioning failed: ${error.message}`);
     throw error;
@@ -192,16 +213,18 @@ async function deleteServerInstances(address, port) {
  * Create a security object instance
  */
 async function createSecurityInstance(address, port, instance) {
-  const tlvData = createSecurityTLV(instance);
+  const security = createSecurity(instance);
+  const data = PayloadCodec.encode(security,CONTENT_FORMATS.cbor);
+
   const client = { address, port };
   
   const response = await sendCoapRequest(
     client, 
     'POST', 
     '/0', 
-    tlvData, 
+    data, 
     '', 
-    { format: 'application/vnd.oma.lwm2m+tlv' }
+    { format: CONTENT_FORMATS.cbor }
   );
 
   if (!response.code.startsWith('2.')) {
@@ -213,16 +236,18 @@ async function createSecurityInstance(address, port, instance) {
  * Create a server object instance
  */
 async function createServerInstance(address, port, instance) {
-  const tlvData = createServerTLV(instance);
+  const security = createServer(instance);
+  const data = PayloadCodec.encode(security,CONTENT_FORMATS.cbor);
+
   const client = { address, port };
   
   const response = await sendCoapRequest(
     client, 
     'POST', 
     '/1', 
-    tlvData, 
+    data, 
     '', 
-    { format: 'application/vnd.oma.lwm2m+tlv' }
+    { format: CONTENT_FORMATS.cbor }
   );
 
   if (!response.code.startsWith('2.')) {
@@ -236,17 +261,17 @@ async function createServerInstance(address, port, instance) {
 async function sendBootstrapFinish(address, port) {
   const client = { address, port };
   const response = await sendCoapRequest(client, 'POST', '/bs');
-  
+
   if (!response.code.startsWith('2.')) {
     throw new Error(`Bootstrap finish failed: ${response.code}`);
   }
+
 }
 
 /**
  * Create TLV data for security object
  */
-function createSecurityTLV(instance) {
-  const tlv = require('../utils/tlv');
+function createSecurity(instance) {
   
   const resources = [
     { id: 0, value: instance.serverUri },           // LwM2M Server URI
@@ -255,19 +280,14 @@ function createSecurityTLV(instance) {
     { id: 10, value: instance.shortServerId }       // Short Server ID
   ];
 
-  return tlv.encode([{
-    id: instance.instanceId,
-    type: 'object-instance',
-    resources: resources
-  }]);
+  return resources;
 }
 
 /**
  * Create TLV data for server object
  */
-function createServerTLV(instance) {
-  const tlv = require('../utils/tlv');
-  
+function createServer(instance) {
+
   const resources = [
     { id: 0, value: instance.shortServerId },       // Short Server ID
     { id: 1, value: instance.lifetime },            // Lifetime
@@ -275,11 +295,7 @@ function createServerTLV(instance) {
     { id: 7, value: instance.binding }              // Binding
   ];
 
-  return tlv.encode([{
-    id: instance.instanceId,
-    type: 'object-instance', 
-    resources: resources
-  }]);
+  return resources;
 }
 
 /**

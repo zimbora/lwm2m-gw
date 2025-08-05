@@ -155,6 +155,7 @@ function startLwM2MMqttServer(brokerUrl, mqttOptions = {}) {
 // === Transport-Agnostic Request Dispatcher ===
 function dispatchRequest(ep, method, path, payload = null, options = {}) {
   const client = getClient(ep);
+  
   if (!client) {
     return Promise.reject(`Client for ep ${ep} not found`);
   }
@@ -197,8 +198,9 @@ function dispatchRequest(ep, method, path, payload = null, options = {}) {
       ep, 
       method, 
       path, 
-      payload: decodedPayload, 
-      options
+      payload : decodedPayload, 
+      options,
+      code : response.code
     });
 
     // Return decoded response
@@ -208,7 +210,7 @@ function dispatchRequest(ep, method, path, payload = null, options = {}) {
       path,
       token : response.token, 
       payload: decodedPayload, 
-      options
+      options,
     };
   });
 

@@ -29,7 +29,7 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
     };
     
     const req = coap.request(reqOpts);
-
+    
     // Set Content-Format if specified
     if (options.format) {
       req.setOption('Content-Format', options.format);
@@ -37,7 +37,11 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
 
     // Write payload if provided
     if (payload) {
-      req.write(payload);
+      try{
+        req.write(payload);
+      }catch(err){
+        reject(err);
+      }
     }
 
     const timeout = setTimeout(() => {
@@ -56,7 +60,7 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
           try{
             token = Buffer.from(res?._packet?.token).toString('hex');
           }catch(error){
-            reject(new Error(`Failed to get CoAP token: ${err.message}`));
+            reject(new Error(`Failed to get CoAP token: ${error.message}`));
           }
         }
         responsePayload = res.payload.toString(); // Default to string
@@ -68,6 +72,7 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
 
     req.on('error', (err) => {
       clearTimeout(timeout);
+      sharedEmitter.emit('error', err);
       reject(err);
     });
 

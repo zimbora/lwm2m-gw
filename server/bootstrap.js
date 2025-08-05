@@ -15,7 +15,7 @@ const BOOTSTRAP_PORT = 5684; // Standard LwM2M Bootstrap port
  * - Security Management: Manages security object provisioning
  */
 
-function startBootstrapServer(port = BOOTSTRAP_PORT) {
+function startBootstrapServer(bootstrapDeviceCall = null, port = BOOTSTRAP_PORT) {
   const server = coap.createServer((req, res) => {
     const path = req?.url.split('?')[0];
     const method = req?.method;
@@ -24,9 +24,8 @@ function startBootstrapServer(port = BOOTSTRAP_PORT) {
 
     if (method === 'POST' && path === '/bs') {
       // Handle bootstrap request
-      handleBootstrapRequest(req, res)
+      handleBootstrapRequest(req, res, bootstrapDeviceCall)
         .then(({ ep }) => {
-          console.log(`[Bootstrap Server] Bootstrap request from: ${ep}`);
           sharedEmitter.emit('bootstrap-request', { protocol: 'coap', ep });
         })
         .catch((err) => {
@@ -37,7 +36,6 @@ function startBootstrapServer(port = BOOTSTRAP_PORT) {
       // Handle bootstrap finish
       handleBootstrapFinish(req, res)
         .then(({ ep }) => {
-          console.log(`[Bootstrap Server] Bootstrap finished for: ${ep}`);
           sharedEmitter.emit('bootstrap-finish', { protocol: 'coap', ep });
         })
         .catch((err) => {

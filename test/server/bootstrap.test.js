@@ -8,6 +8,8 @@ const {
 } = require('../../server/handleBootstrap');
 const coap = require('coap');
 
+jest.useFakeTimers();
+
 describe('Bootstrap Server', () => {
   let server;
   const BOOTSTRAP_PORT = 5685; // Use different port for tests
@@ -18,10 +20,10 @@ describe('Bootstrap Server', () => {
 
   afterAll((done) => {
     if (server) {
-      server.close(done);
-    } else {
-      done();
+      server.close();
     }
+    
+    done();
   });
 
   test('should start bootstrap server on specified port', (done) => {
@@ -39,6 +41,7 @@ describe('Bootstrap Server', () => {
     });
 
     req.on('response', (res) => {
+      console.log(res)
       expect(res.code).toBe('2.04');
       done();
     });
