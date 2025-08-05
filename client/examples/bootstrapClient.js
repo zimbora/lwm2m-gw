@@ -2,21 +2,24 @@
 
 // client/bootstrapClient.js - Bootstrap-enabled LwM2M Client
 global.$ = {};
-$.logger = require('./logger.js');
+$.logger = require('../logger.js');
 
-const { startResourceServer } = require('./resourceServer');
-const { registerToServer } = require('./registration');
-const { performBootstrap } = require('./bootstrap');
+$.client = {};
+$.client['registered'] = false;
+$.client['bootstrapped'] = false;
+$.client['provisioned'] = false;
+
+const { startResourceServer } = require('../resourceServer');
+const { registerToServer } = require('../registration');
+const { performBootstrap } = require('../bootstrap');
 
 const endpointName = 'node-client-bootstrap-001';
 const bootstrapHost = 'localhost';
 const bootstrapPort = 5684;
 const serverHost = 'localhost';
 const serverPort = 5683;
+const localPort = 56830;
 
-$.client = {};
-$.client['registered'] = false;
-$.client['bootstrapped'] = false;
 
 /**
  * Bootstrap-enabled client flow:
@@ -33,13 +36,13 @@ $.client['bootstrapped'] = false;
 
     // Step 2: Perform bootstrap sequence
     $.logger.info('[Bootstrap Client] Starting bootstrap sequence...');
-    await performBootstrap(endpointName, bootstrapHost, bootstrapPort);
+    await performBootstrap(endpointName, bootstrapHost, bootstrapPort, localPort);
     $.client.bootstrapped = true;
     $.logger.info('[Bootstrap Client] Bootstrap completed successfully');
 
     // Step 3: Register to main LwM2M server
     $.logger.info('[Bootstrap Client] Registering to main LwM2M server...');
-    await registerToServer(endpointName, serverHost, serverPort);
+    await registerToServer(endpointName, serverHost, serverPort, localPort);
     $.client.registered = true;
     $.logger.info('[Bootstrap Client] Registration completed successfully');
 
@@ -62,7 +65,7 @@ function monitorServerConnection() {
     if (!$.client.registered) {
       try {
         $.logger.info('[Bootstrap Client] Attempting re-registration...');
-        await registerToServer(endpointName, serverHost, serverPort);
+        await registerToServer(endpointName, serverHost, serverPort, localPort);
         $.client.registered = true;
         $.logger.info('[Bootstrap Client] Re-registration successful');
       } catch (regErr) {
@@ -91,7 +94,7 @@ process.on('SIGINT', () => {
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('[Bootstrap Client] Unhandled Promise Rejection:', reason);
+  $.logger.error('[Bootstrap Client] Unhandled Promise Rejection:', reason);
 });
 
 $.logger.info('[Bootstrap Client] Bootstrap-enabled client is running');
