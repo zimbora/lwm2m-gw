@@ -1,4 +1,7 @@
 // server/server.js
+
+global.$ = {};
+
 const { 
   startLwM2MCoapServer,
   startLwM2MMqttServer,
@@ -10,10 +13,10 @@ const {
   postRequest,
   deleteRequest,
   createRequest,
-} = require('./resourceClient');
+} = require('../resourceClient');
 
-const sharedEmitter = require('./transport/sharedEmitter');
-const {listClients} = require('./clientRegistry');
+const sharedEmitter = require('../transport/sharedEmitter');
+const {listClients} = require('../clientRegistry');
 
 
 process.on('unhandledRejection', (reason, promise) => {
@@ -84,24 +87,24 @@ sharedEmitter.on('deregistration', ({ protocol, ep }) => {
 
 sharedEmitter.on('observation', ({ protocol, ep, token, method, path, payload }) => {
   
-  console.log(`[Server] Data received via: ${ep}/${method}${path}`);
-  console.log(`[Server] payload: ${payload}`);
-  
+  console.log(`[Event] Data received via: ${ep}/${method}${path}`);
+  console.log(`[Event] payload: ${payload}`);
 });
 
-sharedEmitter.on('response', ({ protocol, ep, method, path, payload, options }) => {
-  if(path != "/.well-known/core"){
+sharedEmitter.on('response', ({ protocol, ep, method, path, payload, options, error }) => {
+  //console.log(options)
+  if(path == "/.well-known/core"){
+    
+  }else{
     console.log(`[Event] Client response ${protocol}: ${ep}/${method}${path}`);
     if(payload != null)
       console.log(`[Event] Client payload ${payload}`);
-  }else{
-    //console.log(payload)
   }
 
 });
 
 sharedEmitter.on('error', (error) => {
-  console.log(error);
+  console.error(error);
 });
 
 // Define a validation function

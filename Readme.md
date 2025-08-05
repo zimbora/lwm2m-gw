@@ -3,16 +3,27 @@
 
 ## Demo
 
-### Launch server
+### Launch Bootstrap Server
+
+>> node server/bootstrapServer.js | npx pino-pretty
+
+### Launch Main LwM2M Server
 
 >> node server/server.js | npx pino-pretty
 
-### Launch client
+### Launch Bootstrap Client
 
->> node client/client.js
+>> node client/bootstrapClient.js | npx pino-pretty
 
-with pino prety - nice output logs
+### Launch Standard Client
+
 >> node client/client.js | npx pino-pretty
+
+The bootstrap client will automatically:
+1. Connect to bootstrap server (port 5684)
+2. Receive security and server configuration 
+3. Register to main LwM2M server (port 5683)
+4. Begin normal LwM2M operations
 
 This project implements a Lightweight Machine to Machine (LwM2M) client and server in Node.js using CoAP.
 
@@ -23,7 +34,11 @@ This project implements a Lightweight Machine to Machine (LwM2M) client and serv
 | Feature                              | 🌐 Client                         | 🖥️ Server                           | ✅ Auto Tests   |
 |--------------------------------------|-----------------------------------|-------------------------------------|-----------------|
 | **Bootstrap Server**                 |                                   |                                     |                 |
-| To be defined                        | 🕐 Planned                        | 🕐 Planned                          | 🛑 Not Covered  |
+| Bootstrap Request Handling           | ✅ Supports bootstrap requests   | ✅ Handles `/bs` endpoint           | ✅ Covered      |
+| Security Object Provisioning        | ✅ Receives provisioned config   | ✅ Creates security instances       | ✅ Covered      |
+| Server Object Provisioning          | ✅ Receives provisioned config   | ✅ Creates server instances         | ✅ Covered      |
+| Bootstrap Finish                     | ✅ Sends finish notification     | ✅ Handles `/bs-finish` endpoint    | ✅ Covered      |
+| Configuration Management             | 🕐 Planned                        | ✅ Per-endpoint configuration       | 🟡 Partial      |
 |                                      |                                   |                                     |                 |
 | **Server**                           |                                   |                                     |                 |
 | LwM2M Registration (`/rd`)           | ✅ Sends registration             | ✅ Handles registration             | ✅ Covered	   |

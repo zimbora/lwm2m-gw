@@ -1,15 +1,16 @@
 
 global.$ = {};
-$.logger = require('./logger.js')
+$.logger = require('../logger.js')
 
 // client/client.js
-const { startResourceServer } = require('./resourceServer');
-const { registerToServer, updateRegistration, deregister } = require('./registration');
+const { startResourceServer } = require('../resourceServer');
+const { registerToServer, updateRegistration, deregister } = require('../registration');
 
 
 const endpointName = 'node-client-001';
 const serverHost = 'localhost';
 const serverPort = 5683;
+const localPort = 56830;
 
 const RETRY_INTERVAL = 10000; // Every 10s
 let updateTimer = null;
@@ -20,11 +21,11 @@ $.client['registered'] = false;
 (async () => {
   startResourceServer(); // Start local CoAP server
   try{
-    await registerToServer(endpointName, serverHost, serverPort); // Register to remote LwM2M server
+    await registerToServer(endpointName, serverHost, serverPort, localPort); // Register to remote LwM2M server
 
     $.client.registered = true;
   }catch(error){
-    console.log(error)
+    $.logger.error(error)
   }
     
 })();
@@ -51,7 +52,7 @@ async function monitorServerConnection() {
     if (!$.client.registered){
       try {
           $.logger.info('[Client] Attempting re-registration...');
-          await registerToServer(endpointName, serverHost, serverPort);
+          await registerToServer(endpointName, serverHost, serverPort, localPort);
           $.client.registered = true;
           monitorServerConnection(); // restart updates
         } catch (regErr) {
