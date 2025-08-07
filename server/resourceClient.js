@@ -137,9 +137,9 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
           const uriPath = packet.options.find(option => option.name === 'Uri-Path');
           const uriQuery = packet.options.find(option => option.name === 'Uri-Query');
 
-          const host = "/"+Buffer.from(uriHost?.value).toString('utf8');
-          const path = "/"+Buffer.from(uriPath?.value).toString('utf8');
-          const query = uriQuery ? '?' + Buffer.from(uriQuery?.value).toString('utf8') : '';
+          const host = uriHost ? "/" + Buffer.from(uriHost.value).toString('utf8') : "";
+          const path = uriPath ? "/" + Buffer.from(uriPath.value).toString('utf8') : "";
+          const query = uriQuery ? '?' + Buffer.from(uriQuery.value).toString('utf8') : '';
 
           let method = "";
           switch(packet.code) {
@@ -219,6 +219,7 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
               socket.write(responseBuffer);
             }
           };
+          
           /*
           console.log("host: ", uriHost);
           console.log("path: ", path);
