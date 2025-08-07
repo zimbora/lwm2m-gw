@@ -4,6 +4,7 @@ const coapPacket = require('coap-packet');
 const dtls = require('node-mbedtls-server');
 const sharedEmitter = require('./transport/sharedEmitter');
 const { sendCoapRequest } = require('./transport/coapClient');
+const { sendDTLSCoapRequest } = require('./transport/coapClientDTLS');
 const { connectMqttClient, sendMqttRequest } = require('./transport/mqttClient');
 const { handleRegister, handleUpdate, handleDeregister} = require('./handleRegistration');
 const { registerObservation, getObservation, deregisterObservation } = require('./observationRegistry');
@@ -414,6 +415,8 @@ function dispatchRequest(ep, method, path, payload = null, options = {}) {
   let requestPromise;
   if (coapEnabled && client.protocol === 'coap') {
     requestPromise = sendCoapRequest(client, method, path, payload, '', options);
+  } else if (coapEnabled && client.protocol === 'coaps') {
+    requestPromise = sendDTLSCoapRequest(client, method, path, payload, '', options);
   } else if (mqttEnabled && client.protocol === 'mqtt') {
     requestPromise = sendMqttRequest(client, method, path, payload, options);
   } else {
