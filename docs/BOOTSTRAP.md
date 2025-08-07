@@ -4,27 +4,33 @@ This document describes the Bootstrap Server implementation for the LwM2M Node.j
 
 ## Overview
 
-The Bootstrap Server provides initial configuration and provisioning capabilities for LwM2M devices. It implements the following key features:
+The Bootstrap Server provides initial configuration and provisioning capabilities for LwM2M devices. It implements the OMA LwM2M specification for secure device onboarding and configuration management.
 
-### 1. Provisioning Credentials
-- Supplies initial security credentials (keys, certificates)
-- Enables secure communication between client and LwM2M server
-- Manages security object (Object ID 0) instances
+### Key Capabilities
 
-### 2. Device Configuration  
-- Provides configuration parameters necessary for client operation
-- Supplies server addresses and operational settings
-- Manages server object (Object ID 1) instances
+- **✅ Security Object Provisioning**: Manages LwM2M Security Object (ID: 0) instances
+- **✅ Server Object Provisioning**: Manages LwM2M Server Object (ID: 1) instances  
+- **✅ Per-Device Configuration**: Customizable bootstrap configurations per endpoint
+- **✅ TLV Encoding**: Efficient binary encoding for object provisioning
+- **✅ Event Monitoring**: Real-time bootstrap lifecycle events
+- **✅ Production Ready**: Configurable validation and authentication
 
-### 3. Initial Registration Facilitation
-- Delivers bootstrap information for main LwM2M server connection
-- Coordinates the transition from bootstrap to operational mode
-- Ensures client can connect and interact with main LwM2M server
+### Implementation Features
 
-### 4. Security Management
-- Manages security object provisioning
-- Supports updating and revoking credentials
-- Handles security mode configuration
+1. **Device Onboarding**
+   - Automated provisioning of security credentials
+   - Server configuration delivery
+   - Seamless transition to operational mode
+
+2. **Security Management**
+   - PSK, Certificate, and No-Security modes
+   - Credential rotation and updates
+   - Per-device security policies
+
+3. **Configuration Management**
+   - Server endpoint configuration
+   - Lifetime and binding parameters
+   - Custom device-specific settings
 
 ## Architecture
 
@@ -204,11 +210,44 @@ The client will:
 
 ## Security Considerations
 
-- Bootstrap server should run in secure environment
-- Consider implementing authentication for bootstrap requests
-- Use encrypted transport (DTLS) for production deployments
-- Regularly rotate and update credentials
-- Monitor bootstrap requests for anomalies
+### DTLS Integration
+
+The bootstrap server can be used alongside DTLS-enabled LwM2M servers for end-to-end security:
+
+```javascript
+// Bootstrap configuration for DTLS server
+const secureDTLSConfig = {
+  securityInstances: [{
+    instanceId: 0,
+    serverUri: 'coaps://secure.lwm2m-server.com:5684',  // CoAPS URI
+    isBootstrap: false,
+    securityMode: 2,        // Certificate-based security
+    shortServerId: 1,
+    publicKey: './device-cert.pem',     // Device certificate
+    secretKey: './device-key.pem'      // Device private key
+  }],
+  serverInstances: [{
+    instanceId: 0,
+    shortServerId: 1,
+    lifetime: 86400,        // 24 hour lifetime
+    binding: 'U',
+    notificationStoring: true
+  }]
+};
+
+// Configure device for secure connection
+setBootstrapConfiguration('secure-device', secureDTLSConfig);
+```
+
+### Security Best Practices
+
+- **Certificate Management**: Use proper CA-signed certificates in production
+- **Bootstrap Authentication**: Implement proper client validation during bootstrap
+- **Encrypted Bootstrap**: Consider running bootstrap server over DTLS as well
+- **Key Protection**: Secure private key storage and access control
+- **Client Authentication**: Implement proper client certificate validation
+- **Regular Updates**: Keep certificates current and rotate keys periodically
+- **Network Security**: Use VPNs or secure networks for bootstrap communications
 
 ## Future Enhancements
 
