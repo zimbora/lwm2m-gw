@@ -5,8 +5,13 @@
   "dependencies": {
     "cbor": "^10.0.9",
     "coap": "^0.26.0",
+    "coap-packet": "^1.1.1",
     "mqtt": "^5.13.3",
+<<<<<<< HEAD
     "node-mbed-dtls": "^3.0.0-rc.14",
+=======
+    "node-mbedtls-server": "^3.1.1",
+>>>>>>> origin/dtls
     "pino": "^9.7.0"
   },
   "scripts": {
