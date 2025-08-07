@@ -19,6 +19,8 @@ const {
 const coapEnabled = true;
 const mqttEnabled = false;
 
+
+
 // === method to initialize client based on protocol ===
 function startLwM2MCoapServer(validation, port = 5683) {
   const server = coap.createServer((req, res) => {
