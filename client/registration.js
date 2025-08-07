@@ -1,60 +1,87 @@
-
 // client/registration.js
 const coap = require('coap');
 const { getSocket } = require('./resourceServer');
+const sendDTLSCoapRequest = require('./transport/coapClientDTLS');
 
 let registrationLocation = null;
 
-function registerToServer(endpointName, serverHost, serverPort, localPort = 5683, timeoutMs = 1000 ) {
+function registerToServer(endpointName, serverHost, serverPort, localPort = 5683, timeoutMs = 1000, protocol = 'coap') {
   return new Promise((resolve, reject) => {
-    //const agent = new coap.Agent({ socket: getSocket() }); // share server socket
-    const agent = new coap.Agent(); // share server socket
+    if (protocol === 'coaps') {
+      // Use DTLS request for coaps
+      sendDTLSCoapRequest({
+        hostname: serverHost,
+        port: serverPort,
+        pathname: '/rd',
+        method: 'POST',
+        query: `ep=${endpointName}&lt=300&b=U&port=${localPort}`,
+        options: {
+          'Content-Format': 'application/link-format'
+        },
+        payload: '</3/0>,</3303/0>'
+      }, (err, res) => {
+        if (err) return reject(err);
+        if (res.code !== '2.01') {
+          $.logger.error(`[Client] Registration failed: ${res.code}`);
+          $.logger.error(res);
+          return reject(new Error(res.payload.toString()));
+        }
+        const location = res.options.find(opt => opt.name === 'Location-Path');
+        if (!location) return reject(new Error('No Location-Path in response'));
+        const path = res.options
+          .filter(o => o.name === 'Location-Path')
+          .map(o => o.value.toString())
+          .join('/');
+        registrationLocation = `/` + path;
+        $.logger.info(`[Client] Registered with server. Location: ${path}`);
+        resolve();
+      });
+      return;
+    }else{
+      const agent = new coap.Agent(); // share server socket
+      const req = coap.request({
+        hostname: serverHost,
+        port: serverPort,
+        pathname: '/rd',
+        method: 'POST',
+        query: `ep=${endpointName}&lt=300&b=U&port=${localPort}`,
+        agent
+      });
 
-    // !!
-    // if DTLS, use same logic than sendNotification on dtlsServer.js
-    // or implement sendDTLSCoapRequest as used in coapClientDTLS.js 
-    
-    const req = coap.request({
-      hostname: serverHost,
-      port: serverPort,
-      pathname: '/rd',
-      method: 'POST',
-      query: `ep=${endpointName}&lt=300&b=U&port=${localPort}`,
-      agent
-    });
+      let timeout = setTimeout(() => {
+        //req.abort(); // cancel the CoAP request
+        reject(new Error('Server did not respond to registration (timeout)'));
+      }, timeoutMs);
 
-    let timeout = setTimeout(() => {
-      //req.abort(); // cancel the CoAP request
-      reject(new Error('Server did not respond to registration (timeout)'));
-    }, timeoutMs);
+      req.setOption('Content-Format', 'application/link-format');
+      req.write('</3/0>,</3303/0>'); // Example object links
 
-    req.setOption('Content-Format', 'application/link-format');
-    req.write('</3/0>,</3303/0>'); // Example object links
+      req.on('response', (res) => {
+        if (res.code !== '2.01') {
+          $.logger.error(`[Client] Registration failed: ${res.code}`);
+          $.logger.error(res);
+          return reject(new Error(res.payload.toString()));
+        }
 
-    req.on('response', (res) => {
-      if (res.code !== '2.01') {
-        $.logger.error(`[Client] Registration failed: ${res.code}`);
-        $.logger.error(res);
-        return reject(new Error(res.payload.toString()));
-      }
+        const location = res.options.find(opt => opt.name === 'Location-Path');
+        if (!location) return reject(new Error('No Location-Path in response'));
 
-      const location = res.options.find(opt => opt.name === 'Location-Path');
-      if (!location) return reject(new Error('No Location-Path in response'));
+        const path = res.options
+          .filter(o => o.name === 'Location-Path')
+          .map(o => o.value.toString())
+          .join('/');
 
-      const path = res.options
-        .filter(o => o.name === 'Location-Path')
-        .map(o => o.value.toString())
-        .join('/');
+        registrationLocation = `/` + path;
+        $.logger.info(`[Client] Registered with server. Location: ${path}`);
+        resolve();
+      });
 
-      registrationLocation = `/` + path;
-      $.logger.info(`[Client] Registered with server. Location: ${path}`);
-      resolve();
-    });
+      req.on('error', reject);
+      req.end();
 
-    req.on('error', reject);
-    req.end();
-
+    }
   });
+    
 }
 
 function updateRegistration(host, port = 5683, timeoutMs = 300) {

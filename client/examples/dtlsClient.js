@@ -93,7 +93,7 @@ function identityPskCallback(identity, sessionId) {
     $.logger.info(`[DTLS Client]    coap-client -m GET -k q2w3e4r5t6 coaps://localhost:${localPort}/3/0/0`);
 
     try{
-      await registerToServer(endpointName, serverHost, serverPort, localPort); // Register to remote LwM2M server
+      await registerToServer(endpointName, serverHost, serverPort, localPort, 300, 'coaps'); // Register to remote LwM2M server
 
       $.client.registered = true;
     }catch(error){
