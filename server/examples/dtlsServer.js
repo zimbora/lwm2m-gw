@@ -18,6 +18,7 @@
  */ 
 
 const path = require('path');
+
 const { startLwM2MDTLSCoapServer } = require('../resourceClient');
 
 // Validation function for client registration
@@ -57,6 +58,7 @@ function identityPskCallback(identity, sessionId) {
 try {
   console.log('[DTLS Example] Starting DTLS-enabled LwM2M server...');
   
+
   /*
   !! To be tested with ECDSA certs
   const dtlsOptions = {
@@ -94,11 +96,13 @@ try {
     server = startLwM2MDTLSCoapServer(validation, dtlsOptions);
   } catch (error) {
     console.error('[DTLS Example] Error starting server:', error.message);
+
     process.exit(1);
   }
   
   console.log('[DTLS Example] Server started successfully!');
   console.log(`[DTLS Example] Clients can connect using CoAPS (DTLS) on port ${dtlsOptions.port}`);
+
   
   // Handle graceful shutdown
   process.on('SIGINT', () => {

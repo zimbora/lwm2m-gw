@@ -2,6 +2,7 @@
 const coap = require('coap');
 const coapPacket = require('coap-packet');
 const dtls = require('node-mbedtls-server');
+
 const sharedEmitter = require('./transport/sharedEmitter');
 const { sendCoapRequest } = require('./transport/coapClient');
 const { sendDTLSCoapRequest } = require('./transport/coapClientDTLS');
@@ -118,6 +119,7 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
       socket.on('data', (buffer) => {
         try {
           // Parse the CoAP message from the decrypted DTLS payload
+
           const packet = coapPacket.parse(buffer);
           /*
           console.log(packet);
@@ -167,6 +169,7 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
               address : socket.remoteAddress,
               port: socket.remotePort
             },
+
             method: method,
             payload: packet.payload,
             headers: {},
@@ -201,6 +204,7 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
               // Store headers for response
               this.headers[name] = value;
             },  
+
             end: function(data) {
               // Create CoAP response packet
               const responsePacket = {
@@ -235,6 +239,7 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
             console.log(`[DTLS Server] Responded to GET /time`); 
           }
           else if (method === 'POST' && path === '/rd') {
+
             handleRegister(req, res, 'dtls', validation)
               .then(({ ep, location }) => {
                 sharedEmitter.emit('registration', { protocol: 'dtls', ep, location });
