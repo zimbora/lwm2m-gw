@@ -143,24 +143,12 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
           const path = uriPath ? "/" + Buffer.from(uriPath.value).toString('utf8') : "";
           const query = uriQuery ? '?' + Buffer.from(uriQuery.value).toString('utf8') : '';
 
-          let method = "";
-          switch(packet.code) {
-            case '0.01':
-              method = 'GET';
-              break;
-            case '0.02':
-              method = 'POST'
-              break;
-            case '0.03':
-              method = 'PUT';
-              break;
-            case '0.04':
-              method = 'DELETE';
-              break;
-            default:
-              method = 'UNKNOWN';
-              console.warn(`[DTLS Server] Unsupported CoAP method: ${packet.code}`);
-          }
+          const method = {
+            '0.01': 'GET',
+            '0.02': 'POST',
+            '0.03': 'PUT',
+            '0.04': 'DELETE'
+          }[parsed.code] || 'UNKNOWN';
 
           // Create a mock request/response object compatible with existing handlers
           const req = {

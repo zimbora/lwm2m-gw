@@ -1,39 +1,15 @@
 // client/transport/dtlsServer.js
 
-const dtls = require('node-mbed-dtls');
+const dtls = require('node-mbedtls-server');
+const { dtlsClient } = require('node-dtls-client');
 const packet = require('coap-packet');
 const path = require('path');
 
 let server;
 let observers = {}; // key: path, value: array of observer objects
 
-const pskIdentity = Buffer.from('my_identity', 'utf8');
-const pskKey = Buffer.from('736563726574', 'utf8'); // must be a Buffer
+function createServer(handler, port = 56831, dtlsOptions = {}) {
 
-function createServer(handler, port = 56831, options = {}) {
-  console.log(options);
-  
-  // Only add options that are defined and valid
-  let dtlsOptions = {
-    debug: 5,
-    key: options.keyPath || path.join(__dirname, '../private.der'),
-    certPath: options.certPath,
-    debug: typeof options.debug === 'number' ? options.debug : 0,
-    handshakeTimeoutMin: typeof options.handshakeTimeoutMin === 'number' ? options.handshakeTimeoutMin : 3000,
-  };
-  
-/*
-  let dtlsOptions = {
-    debug : 8,
-    key: options.key || path.join(__dirname, '../private.der'),
-    type: 'udp4',
-    port: port,
-    psk: pskKey,
-    PSKIdent: pskIdentity,
-  }
-
-  console.log(dtlsOptions);
-*/
   server = dtls.createServer(dtlsOptions, (socket) => {
     $.logger.info(`[Client] DTLS secure connection from ${socket.remoteAddress}:${socket.remotePort}`);
 
@@ -47,9 +23,16 @@ function createServer(handler, port = 56831, options = {}) {
           return;
         }
 
+        const method = {
+          '0.01': 'GET',
+          '0.02': 'POST',
+          '0.03': 'PUT',
+          '0.04': 'DELETE'
+        }[parsed.code] || 'UNKNOWN';
+
         // Create a CoAP request-like object
         const req = {
-          method: parsed.code,
+          method: method,
           url: parsed.url || '/',
           headers: {},
           payload: parsed.payload,
@@ -148,6 +131,48 @@ function sendNotification(observer, path, value) {
   // This is more complex than regular CoAP and would require maintaining DTLS connections
   // For now, log the notification
   $.logger.warn(`[Client] DTLS notifications not yet implemented for ${observer.address}:${observer.port}`);
+
+  if (!$.client.registered) return;
+  
+  $.logger.info(`[Client] Sending notification for ${path}: ${value}`);
+
+  const coapReq = coapPacket.generate({
+    confirmable: true,
+    messageId: Math.floor(Math.random() * 65535),
+    method: 'GET',  // Use GET for notifications
+    token: observer.token,
+    options: [
+      { name: 'Uri-Path', value: Buffer.from('/' + path) },
+      { name: 'Observe', value: Buffer.from(observer.observeSeq & 0xffffff) },
+      { name: 'Content-Format', value: Buffer.from('text/plain') }
+    ],
+    payload: Buffer.alloc(String(value))
+  });
+
+  const socket = dtlsClient.createSocket({
+    type: "udp4",
+    address: observer.address,
+    port: observer.port,
+    psk: { "Client_identity": "secret" }
+  })
+  .on("connected", () => {
+    console.log("secure connection established");
+    console.log("sending CoAP request...");
+    socket.send(coapReq);
+  })
+  .on("error", (e) => console.error(`error: ${e.message}`))
+  .on("message", (msg) => {
+    const parsed = coapPacket.parse(msg);
+    console.log('Received CoAP response:', parsed);
+    console.log(`payload: ${parsed.payload.toString()}`);
+  })
+  .on("close", () => console.log("connection closed"));
+
+  req.write(String(value));
+  req.end();
+
+  observer.observeSeq++;
+
 }
 
 function stopObservation(resource) {

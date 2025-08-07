@@ -5,11 +5,15 @@ const { getSocket } = require('./resourceServer');
 
 let registrationLocation = null;
 
-function registerToServer(endpointName, serverHost, serverPort, localPort = 5683, timeoutMs = 300 ) {
+function registerToServer(endpointName, serverHost, serverPort, localPort = 5683, timeoutMs = 1000 ) {
   return new Promise((resolve, reject) => {
     //const agent = new coap.Agent({ socket: getSocket() }); // share server socket
     const agent = new coap.Agent(); // share server socket
 
+    // !!
+    // if DTLS, use same logic than sendNotification on dtlsServer.js
+    // or implement sendDTLSCoapRequest as used in coapClientDTLS.js 
+    
     const req = coap.request({
       hostname: serverHost,
       port: serverPort,

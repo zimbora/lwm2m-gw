@@ -26,6 +26,7 @@ function startDtlsResourceServer(port = 56830, dtlsOptions = {}) {
   const observers = getObservers();
 
   const server = createServer((req, res) => {
+
     if (req.method === 'GET' && req.url === '/.well-known/core') {
       return handleDiscoveryRequest(res);
     }
