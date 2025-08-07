@@ -1,8 +1,11 @@
 // server/resourceClient.js
 const coap = require('coap');
-const dtls = require('node-mbed-dtls');
+const coapPacket = require('coap-packet');
+const dtls = require('node-mbedtls-server');
+
 const sharedEmitter = require('./transport/sharedEmitter');
 const { sendCoapRequest } = require('./transport/coapClient');
+const { sendDTLSCoapRequest } = require('./transport/coapClientDTLS');
 const { connectMqttClient, sendMqttRequest } = require('./transport/mqttClient');
 const { handleRegister, handleUpdate, handleDeregister} = require('./handleRegistration');
 const { registerObservation, getObservation, deregisterObservation } = require('./observationRegistry');
@@ -15,6 +18,8 @@ const {
 
 const coapEnabled = true;
 const mqttEnabled = false;
+
+
 
 // === method to initialize client based on protocol ===
 function startLwM2MCoapServer(validation, port = 5683) {
@@ -103,25 +108,10 @@ function startLwM2MCoapServer(validation, port = 5683) {
 // === method to initialize DTLS-enabled client ===
 function startLwM2MDTLSCoapServer(validation, options = {}) {
   const port = options.port || 5684; // Standard CoAPS (DTLS) port
-  const keyPath = options.keyPath || './server.key';
-  const certPath = options.certPath || './server.crt';
-  
-  // Check if certificate files exist
-  const fs = require('fs');
-  if (!fs.existsSync(keyPath)) {
-    throw new Error(`DTLS private key file not found: ${keyPath}. Please provide a valid RSA private key file.`);
-  }
-  if (!fs.existsSync(certPath)) {
-    throw new Error(`DTLS certificate file not found: ${certPath}. Please provide a valid X.509 certificate file.`);
-  }
   
   try {
-    const dtlsOptions = {
-      key: keyPath,
-      cert: certPath
-    };
-    
-    const dtlsServer = dtls.createServer(dtlsOptions);
+
+    const dtlsServer = dtls.createServer(options);
     
     dtlsServer.on('secureConnection', (socket) => {
       console.log(`[DTLS] New secure connection from ${socket.remoteAddress}:${socket.remotePort}`);
@@ -129,13 +119,57 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
       socket.on('data', (buffer) => {
         try {
           // Parse the CoAP message from the decrypted DTLS payload
-          const packet = coap.parse(buffer);
-          const path = packet.url?.split('?')[0] || '/';
-          const method = packet.code;
-          
+
+          const packet = coapPacket.parse(buffer);
+          /*
+          console.log(packet);
+          code: '0.04',
+          confirmable: true,
+          reset: false,
+          ack: false,
+          messageId: 14976,
+          token: <Buffer >,
+          options: [
+            { name: 'Uri-Host', value: <Buffer 6c 6f 63 61 6c 68 6f 73 74> },
+            { name: 'Uri-Path', value: <Buffer 72 64> }
+          ],
+          payload: <Buffer >
+          */
+          const uriHost = packet.options.find(option => option.name === 'Uri-Host');
+          const uriPath = packet.options.find(option => option.name === 'Uri-Path');
+          const uriQuery = packet.options.find(option => option.name === 'Uri-Query');
+
+          const host = uriHost ? "/" + Buffer.from(uriHost.value).toString('utf8') : "";
+          const path = uriPath ? "/" + Buffer.from(uriPath.value).toString('utf8') : "";
+          const query = uriQuery ? '?' + Buffer.from(uriQuery.value).toString('utf8') : '';
+
+          let method = "";
+          switch(packet.code) {
+            case '0.01':
+              method = 'GET';
+              break;
+            case '0.02':
+              method = 'POST'
+              break;
+            case '0.03':
+              method = 'PUT';
+              break;
+            case '0.04':
+              method = 'DELETE';
+              break;
+            default:
+              method = 'UNKNOWN';
+              console.warn(`[DTLS Server] Unsupported CoAP method: ${packet.code}`);
+          }
+
           // Create a mock request/response object compatible with existing handlers
           const req = {
-            url: packet.url,
+            url: path+query,
+            rsinfo : {
+              address : socket.remoteAddress,
+              port: socket.remotePort
+            },
+
             method: method,
             payload: packet.payload,
             headers: {},
@@ -160,25 +194,52 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
           const res = {
             code: '2.05',
             payload: null,
+            options: [],
+            headers: {},
+            setOption: function(name, value) {
+              // Store options for response
+              this.options.push({ name, value });
+            },
+            setHeader: function(name, value) {
+              // Store headers for response
+              this.headers[name] = value;
+            },  
+
             end: function(data) {
               // Create CoAP response packet
               const responsePacket = {
                 messageId: packet.messageId,
                 token: packet.token,
                 code: this.code,
-                payload: data || this.payload || Buffer.alloc(0)
+                options: [],
+                headers: {},
+                payload: Buffer.isBuffer(data) ? data : Buffer.from(data || this.payload || '')
               };
               
               // Generate CoAP response buffer
-              const responseBuffer = coap.generate(responsePacket);
+              const responseBuffer = coapPacket.generate(responsePacket);
               
               // Send encrypted response through DTLS socket
               socket.write(responseBuffer);
             }
           };
           
+          /*
+          console.log("host: ", uriHost);
+          console.log("path: ", path);
+          console.log("query: ", query);
+          console.log("method: ", method);
+          console.log("path: ", path);
+          */
+
           // Route to appropriate handler based on method and path
-          if (method === 'POST' && path === '/rd') {
+          if (method === 'GET' && path === '/time') { // for test porposes
+            res.code = '2.05';
+            res.end(new Date().toISOString());
+            console.log(`[DTLS Server] Responded to GET /time`); 
+          }
+          else if (method === 'POST' && path === '/rd') {
+
             handleRegister(req, res, 'dtls', validation)
               .then(({ ep, location }) => {
                 sharedEmitter.emit('registration', { protocol: 'dtls', ep, location });
@@ -360,6 +421,8 @@ function dispatchRequest(ep, method, path, payload = null, options = {}) {
   let requestPromise;
   if (coapEnabled && client.protocol === 'coap') {
     requestPromise = sendCoapRequest(client, method, path, payload, '', options);
+  } else if (coapEnabled && client.protocol === 'coaps') {
+    requestPromise = sendDTLSCoapRequest(client, method, path, payload, '', options);
   } else if (mqttEnabled && client.protocol === 'mqtt') {
     requestPromise = sendMqttRequest(client, method, path, payload, options);
   } else {
