@@ -16,14 +16,21 @@ const localPort = 56831; // DTLS server port
   try {
     // Start DTLS resource server
     $.logger.info('[DTLS Client] Starting DTLS resource server...');
-    
+    /*
     const dtlsOptions = {
       // Use default certificate for testing
       // In production, you would use proper certificates
-      debug: 0, // Set to higher values for more debug output
-      handshakeTimeoutMin: 3000
+      debug: 5, // Set to higher values for more debug output
+      handshakeTimeoutMin: 3000,
+      //psk : "mySharedPrivateKey"
     };
-    
+    */
+    const dtlsOptions = {
+      debug: 5, // Set to higher values for more debug output
+      keyPath: './certTests/server-key.pem',   // Path to RSA private key
+      certPath: './certTests/server-cert.pem',  // Path to X.509 certificate
+    };
+
     startDtlsResourceServer(localPort, dtlsOptions);
     $.logger.info('[DTLS Client] DTLS resource server started');
 

@@ -7,15 +7,33 @@ const path = require('path');
 let server;
 let observers = {}; // key: path, value: array of observer objects
 
-function createServer(handler, port = 56830, options = {}) {
-  // Default DTLS options
-  const dtlsOptions = {
-    key: options.key || path.join(__dirname, '../private.der'),
-    debug: options.debug || 0,
-    handshakeTimeoutMin: options.handshakeTimeoutMin || 3000,
-    ...options
-  };
+const pskIdentity = Buffer.from('my_identity', 'utf8');
+const pskKey = Buffer.from('736563726574', 'utf8'); // must be a Buffer
 
+function createServer(handler, port = 56831, options = {}) {
+  console.log(options);
+  
+  // Only add options that are defined and valid
+  let dtlsOptions = {
+    debug: 5,
+    key: options.keyPath || path.join(__dirname, '../private.der'),
+    certPath: options.certPath,
+    debug: typeof options.debug === 'number' ? options.debug : 0,
+    handshakeTimeoutMin: typeof options.handshakeTimeoutMin === 'number' ? options.handshakeTimeoutMin : 3000,
+  };
+  
+/*
+  let dtlsOptions = {
+    debug : 8,
+    key: options.key || path.join(__dirname, '../private.der'),
+    type: 'udp4',
+    port: port,
+    psk: pskKey,
+    PSKIdent: pskIdentity,
+  }
+
+  console.log(dtlsOptions);
+*/
   server = dtls.createServer(dtlsOptions, (socket) => {
     $.logger.info(`[Client] DTLS secure connection from ${socket.remoteAddress}:${socket.remotePort}`);
 
