@@ -1,16 +1,17 @@
 // client/transport/dtlsServer.js
 
-const dtls = require('node-mbedtls-server');
-const { dtlsClient } = require('node-dtls-client');
+const dtlsMbed = require('node-mbedtls-server');
+const { dtls, dtlsClient } = require('node-dtls-client');
 const packet = require('coap-packet');
 const path = require('path');
 
 let server;
 let observers = {}; // key: path, value: array of observer objects
 
+
 function createServer(handler, port = 56831, dtlsOptions = {}) {
 
-  server = dtls.createServer(dtlsOptions, (socket) => {
+  server = dtlsMbed.createServer(dtlsOptions, (socket) => {
     $.logger.info(`[Client] DTLS secure connection from ${socket.remoteAddress}:${socket.remotePort}`);
 
     socket.on('data', (data) => {
@@ -116,8 +117,6 @@ function createServer(handler, port = 56831, dtlsOptions = {}) {
                 headers: this.headers,
                 payload: Buffer.isBuffer(data) ? data : Buffer.from(data || this.data || '')
               };
-              console.log("rspPacket")
-              console.log(rspPacket)
 
               socket.write(packet.generate(rspPacket));
             } catch (error) {
@@ -158,57 +157,80 @@ function createServer(handler, port = 56831, dtlsOptions = {}) {
   return server;
 }
 
+function sendDTLSCoapRequest(options, callback) {
+  const methodMap = { GET: '0.01', POST: '0.02', PUT: '0.03', DELETE: '0.04' };
+  const code = methodMap[(options.method || 'GET').toUpperCase()] || '0.01';
+
+  const coapOptions = [];
+  if (options.pathname) {
+    options.pathname.split('/').filter(Boolean).forEach(segment => {
+      coapOptions.push({ name: 'Uri-Path', value: Buffer.from(segment) });
+    });
+  }
+  if (options.query) {
+    coapOptions.push({ name: 'Uri-Query', value: Buffer.from(options.query) });
+  }
+  if (Array.isArray(options.extraOptions)) {
+    coapOptions.push(...options.extraOptions);
+  }
+
+  const coapReq = packet.generate({
+    confirmable: true,
+    messageId: Math.floor(Math.random() * 65535),
+    code,
+    token: options.token || Buffer.alloc(0),
+    options: coapOptions,
+    payload: options.payload ? Buffer.from(options.payload) : Buffer.alloc(0)
+  });
+
+  const timeout = setTimeout(() => {
+    return callback(new Error('CoAP DTLS request timed out'));
+  }, options.timeout || 1000);
+
+  $.client.socket.once('message', (msg) => {
+    clearTimeout(timeout);
+    try {
+      const parsed = packet.parse(msg);
+      callback(null, parsed);
+    } catch (err) {
+      callback(new Error(`Failed to parse CoAP response: ${err.message}`));
+    }
+  });
+
+  $.client.socket.send(coapReq);
+}
+
+
 function sendNotification(observer, path, value) {
   if (!$.client.registered) return;
 
   $.logger.info(`[Client] Sending DTLS notification for ${path}: ${value}`);
 
-  // For DTLS notifications, we would need to establish a DTLS connection to the observer
-  // This is more complex than regular CoAP and would require maintaining DTLS connections
-  // For now, log the notification
-  $.logger.warn(`[Client] DTLS notifications not yet implemented for ${observer.address}:${observer.port}`);
+  // Convert options into CoAP options array additions
+  const extraOptions = [
+    { name: 'Observe', value: Buffer.from([observer.observeSeq & 0xff]) },
+    { name: 'Content-Format', value: Buffer.from('text/plain') }
+  ];
 
-  if (!$.client.registered) return;
-  
-  $.logger.info(`[Client] Sending notification for ${path}: ${value}`);
-
-  const coapReq = coapPacket.generate({
-    confirmable: true,
-    messageId: Math.floor(Math.random() * 65535),
-    method: 'GET',  // Use GET for notifications
-    token: observer.token,
-    options: [
-      { name: 'Uri-Path', value: Buffer.from('/' + path) },
-      { name: 'Observe', value: Buffer.from(observer.observeSeq & 0xffffff) },
-      { name: 'Content-Format', value: Buffer.from('text/plain') }
-    ],
-    payload: Buffer.alloc(String(value))
+  sendDTLSCoapRequest({
+    method: 'GET', // notifications are sent as GET with Observe
+    pathname: path.startsWith('/') ? path : '/' + path,
+    payload: String(value),
+    extraOptions,         // new field for extra CoAP options
+    token: observer.token, // keep observation link
+    timeout: 2000
+  }, (err, res) => {
+    if (err) {
+      $.logger.error(`[Client] Failed to send notification: ${err.message}`);
+      return;
+    }
+    $.logger.info(`[Client] Notification sent, got response code ${res.code}`);
+    if (res.payload?.length) {
+      $.logger.debug(`[Client] Response payload: ${res.payload.toString()}`);
+    }
   });
 
-  const socket = dtlsClient.createSocket({
-    type: "udp4",
-    address: observer.address,
-    port: observer.port,
-    psk: { "Client_identity": "secret" }
-  })
-  .on("connected", () => {
-    console.log("secure connection established");
-    console.log("sending CoAP request...");
-    socket.send(coapReq);
-  })
-  .on("error", (e) => console.error(`error: ${e.message}`))
-  .on("message", (msg) => {
-    const parsed = coapPacket.parse(msg);
-    console.log('Received CoAP response:', parsed);
-    console.log(`payload: ${parsed.payload.toString()}`);
-  })
-  .on("close", () => console.log("connection closed"));
-
-  req.write(String(value));
-  req.end();
-
   observer.observeSeq++;
-
 }
 
 function stopObservation(resource) {
@@ -228,6 +250,7 @@ function getServer() {
 
 module.exports = {
   createServer,
+  sendDTLSCoapRequest,
   sendNotification,
   stopObservation,
   getObservers,

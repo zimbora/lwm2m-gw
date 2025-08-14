@@ -6,6 +6,8 @@ $.logger = require('../logger.js');
 
 $.client = {};
 $.client['registered'] = false;
+$.protocol = 'coaps'
+const { dtls } = require('node-dtls-client');
 
 const path = require('path');
 const { startDtlsResourceServer } = require('../dtlsResourceServer');
@@ -97,34 +99,73 @@ function identityPskCallback(identity, sessionId) {
     $.logger.info('[DTLS Client] 2. Example command with libcoap:');
     $.logger.info(`[DTLS Client]    coap-client -m GET -k q2w3e4r5t6 coaps://localhost:${localPort}/3/0/0`);
 
-    try{
-      await registerToServer(endpointName, serverHost, serverPort, localPort, 300, protocol); // Register to remote LwM2M server
+    
 
-      $.client.registered = true;
-    }catch(error){
-      $.logger.error(error)
-    }
+    // Create DTLS socket once
+    $.client.socket = dtls.createSocket({
+      type: 'udp4',
+      address: 'localhost',
+      port: 5684,
+      psk: { "Client_identity": "secret" }
+    });
 
-    /*
-    setTimeout(async()=>{
+    $.client.socket.on('connected', async () => {
+      console.log('DTLS connected');
+
       try{
-        if($.client.registered)
-          await deregister(serverHost, serverPort, 300, protocol); // Register to remote LwM2M server
+        await registerToServer(endpointName, serverHost, serverPort, localPort, 300, protocol); // Register to remote LwM2M server
+        $.client.registered = true;
 
-        $.client.registered = false;
+        monitorServerConnection(); // Start periodic update checks
+
+        /*
+        setTimeout(async()=>{
+          try{
+            if($.client.registered)
+              await deregister(serverHost, serverPort, 300, protocol); // Register to remote LwM2M server
+
+            $.client.registered = false;
+          }catch(error){
+            $.logger.error(error)
+          }
+        },5000);
+        */
+
       }catch(error){
         $.logger.error(error)
       }
-    },5000);
-    */
+
+      /*        
+      // Send first request
+      sendDTLSCoapRequest(socket, { pathname: 'sensor/temp', method: 'GET' }, (err, res) => {
+        if (err) return console.error(err);
+        console.log('Temp:', res);
+
+        // Send second request on the same connection
+        sendDTLSCoapRequest(socket, { pathname: 'sensor/humidity', method: 'GET' }, (err, res) => {
+          if (err) return console.error(err);
+          console.log('Humidity:', res);
+
+          socket.close();
+        });
+      });
+      */
+    }); 
+
+    $.client.socket.on('close',()=>{
+      sys.exit(1);
+    });
+
+    $.client.socket.on('error',(error)=>{
+      console.log(error);
+      sys.exit(1);
+    });
     
   } catch (error) {
     $.logger.error(`[DTLS Client] Error: ${error.message}`);
     process.exit(1);
   }
 })();
-
-monitorServerConnection(); // Start periodic update checks
 
 async function monitorServerConnection() {
   
@@ -139,24 +180,25 @@ async function monitorServerConnection() {
           $.logger.error(`[DTLS Client] Re-registration failed: ${regErr.message}`);
         }
         return;
-    }
-
-    try {
-      await updateRegistration(serverHost, serverPort, 300, protocol);
-      $.logger.debug('[DTLS Client] Sent registration update.');
-    } catch (err) {
-      $.logger.error(`[DTLS Client] Lost connection to server during update: ${err.message}`);
-      $.client.registered = false;
-
-      $.logger.info('[DTLS Client] Attempting re-registration...');
+    }else{
       try {
-        await registerToServer(endpointName, serverHost, serverPort, localPort, 300, protocol);
-        $.client.registered = true;
-      } catch (regErr) {
-        $.logger.error(`[DTLS Client] Re-registration failed: ${regErr.message}`);
+        $.logger.info('[DTLS Client] Updating registration...');
+        await updateRegistration(serverHost, serverPort, 300, protocol);
+        $.logger.debug('[DTLS Client] Sent registration update.');
+      } catch (err) {
+        $.logger.error(`[DTLS Client] Lost connection to server during update: ${err.message}`);
+        $.client.registered = false;
+
+        $.logger.info('[DTLS Client] Attempting re-registration...');
+        try {
+          await registerToServer(endpointName, serverHost, serverPort, localPort, 300, protocol);
+          $.client.registered = true;
+        } catch (regErr) {
+          $.logger.error(`[DTLS Client] Re-registration failed: ${regErr.message}`);
+        } 
       }
-      
     }
+
   }, RETRY_INTERVAL);
 }
 

@@ -90,7 +90,7 @@ async function getInfo(clientEp) {
       startObserveRequest(clientEp,'/6/0/7');
 
       // Observe Temperature
-      //startObserveRequest(clientEp,'/3303/0/5700');
+      startObserveRequest(clientEp,'/3303/0/5700');
 
       /*
       // Write

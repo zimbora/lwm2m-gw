@@ -1,11 +1,12 @@
 // client/registration.js
 const coap = require('coap');
 const { getSocket } = require('./resourceServer');
-const sendDTLSCoapRequest = require('./transport/coapClientDTLS');
+const { sendDTLSCoapRequest } = require('./transport/dtlsServer');
 
 let registrationLocation = null;
 
 function registerToServer(endpointName, serverHost, serverPort, localPort = 5683, timeoutMs = 1000, protocol = 'coap') {
+  $.logger.debug(`Register on server: ${serverHost}:${serverPort}`)
   return new Promise((resolve, reject) => {
     if (protocol === 'coaps') {
       // Use DTLS request for coaps
@@ -16,6 +17,7 @@ function registerToServer(endpointName, serverHost, serverPort, localPort = 5683
         method: 'POST',
         query: `ep=${endpointName}&lt=300&b=U&port=${localPort}`,
       }, (err, res) => {
+        $.logger.debug(`Response Register on server: ${serverHost}:${serverPort}`)
         if (err) return reject(err);
         if (res.code !== '2.01') {
           $.logger.error(`[Client] Registration failed: ${res.code}`);
@@ -30,9 +32,8 @@ function registerToServer(endpointName, serverHost, serverPort, localPort = 5683
           .join('/');
         registrationLocation = `/` + path;
         $.logger.info(`[Client] Registered with server. Location: ${path}`);
-        resolve();
+        return resolve();
       });
-      return;
     }else{
       const agent = new coap.Agent(); // share server socket
       const req = coap.request({
@@ -92,7 +93,7 @@ function updateRegistration(host, port = 5683, timeoutMs = 300, protocol = 'coap
     let timeout = setTimeout(() => {
       //req.abort(); // cancel the CoAP request
       reject(new Error('Server did not respond to registration update (timeout)'));
-    }, timeoutMs);
+    }, 500);
 
     if (protocol === 'coaps') {
       // Use DTLS request for coaps

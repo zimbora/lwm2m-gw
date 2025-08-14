@@ -1,11 +1,16 @@
 // client/routes.js
 const crypto = require('crypto');
 
+let sendNotification, stopObservation;
+if ($.protocol === 'coaps') {
+  ({ sendNotification, stopObservation } = require('./transport/dtlsServer'));
+} else {
+  ({ sendNotification, stopObservation } = require('./transport/coapServer'));
+}
 const { encodeResourcesToCBOR, decodeCBOR } = require('../utils/cbor');
 const { encodeTLV, decodeTLV } = require('../utils/tlv');
 const PayloadCodec = require('../utils/payloadCodec');
 const CONTENT_FORMATS = require('../utils/contentFormats');
-const { sendNotification, stopObservation } = require('./transport/coapServer');
 const { getObjectModule,getResource,getResourceSet, addInstance } = require('./objects');
 
 function handleDiscoveryRequest(res) {
