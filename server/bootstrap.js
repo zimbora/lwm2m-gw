@@ -3,7 +3,7 @@ const coap = require('coap');
 const { handleBootstrapRequest, handleBootstrapFinish } = require('./handleBootstrap');
 const sharedEmitter = require('./transport/sharedEmitter');
 
-const BOOTSTRAP_PORT = 5684; // Standard LwM2M Bootstrap port
+const BOOTSTRAP_PORT = 5783; // Standard LwM2M Bootstrap port
 
 /**
  * LwM2M Bootstrap Server

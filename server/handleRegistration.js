@@ -63,13 +63,14 @@ function handleUpdate(req, res, path) {
       });
 
       if (ep) {
-        console.log(`[Server] Updated client: ${ep}`);
+        console.log(`[Server] Updated connection for client: ${ep}`);
         res.code = '2.04';
         res.end();
         resolve({ ep, location });
       } else {
         res.code = '4.04';
         res.end('Client not found');
+        console.log(`[Server] Updated connection, client: ${ep} not found`);
         reject(new Error(`Client not found for location: ${location}`));
       }
     } catch (err) {

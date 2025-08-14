@@ -1,5 +1,6 @@
-// server/transport/coapClient.js
-const coap = require('coap');
+// server/transport/coapClientDTLS.js
+const coapPacket = require('coap-packet');
+const { dtls } = require('node-dtls-client');
 const sharedEmitter = require('./sharedEmitter');
 
 /**
@@ -31,12 +32,13 @@ function sendDTLSCoapRequest(client, method, path, payload = null, query = '', o
     if (options.format) {
       coapOptions.push({ name: 'Content-Format', value: Buffer.from(options.format.toString()) });
     }
+
     if (options.observe !== undefined) {
       coapOptions.push({ name: 'Observe', value: Buffer.from([options.observe]) });
     }
 
     const coapReq = coapPacket.generate({
-      confirmable: options.confirmable !== false,
+      confirmable: options?.confirmable !== false,
       messageId: Math.floor(Math.random() * 65535),
       code,
       options: coapOptions,
@@ -46,9 +48,12 @@ function sendDTLSCoapRequest(client, method, path, payload = null, query = '', o
     const socket = dtls.createSocket({
       type: "udp4",
       address: client.address,
-      port: client.port,
+      port: Number(client.port),
       psk: { "Client_identity": "secret" } // should be replaced with actual PSK, use client
     });
+
+    if(!socket)
+      return reject(new Error(`Failed to open socket with ep: ${client.location}`));
 
     let timeout = setTimeout(() => {
       sharedEmitter.emit('error', new Error('CoAP DTLS request timed out'));
@@ -57,25 +62,32 @@ function sendDTLSCoapRequest(client, method, path, payload = null, query = '', o
     }, options.timeout || 5000);
 
     socket.on("connected", () => {
-      socket.send(coapReq);
+      clearTimeout(timeout);
+      try{
+        socket.send(coapReq);
+      }catch(err){
+        return reject(err);
+      }
     });
 
     socket.on("message", (msg) => {
       clearTimeout(timeout);
       try {
         const parsed = coapPacket.parse(msg);
-        resolve({ code: parsed.code, payload: parsed.payload.toString() });
+        resolve({ code: parsed.code, token:parsed?.token.toString('hex'), payload: parsed.payload.toString() });
       } catch (err) {
         reject(new Error(`Failed to parse CoAP response: ${err.message}`));
       }
-      socket.close();
+      //socket.close();
     });
 
     socket.on("error", (err) => {
       clearTimeout(timeout);
-      sharedEmitter.emit('error', err);
-      reject(err);
-      socket.close();
+      sharedEmitter.emit('error', `Error connecting to client: ${client.location}`);
+      reject(`Error connecting to client: ${client.location}`);
+      try {
+        socket.close();
+      }catch(err){}
     });
 
     socket.on("close", () => {

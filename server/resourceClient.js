@@ -121,8 +121,8 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
           // Parse the CoAP message from the decrypted DTLS payload
 
           const packet = coapPacket.parse(buffer);
+          //console.log(packet);
           /*
-          console.log(packet);
           code: '0.04',
           confirmable: true,
           reset: false,
@@ -136,11 +136,14 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
           payload: <Buffer >
           */
           const uriHost = packet.options.find(option => option.name === 'Uri-Host');
-          const uriPath = packet.options.find(option => option.name === 'Uri-Path');
-          const uriQuery = packet.options.find(option => option.name === 'Uri-Query');
+          const uriPath = packet.options
+            .filter(o => o.name === 'Uri-Path')
+            .map(o => o.value.toString())
+            .join('/');
 
+          const uriQuery = packet.options.find(option => option.name === 'Uri-Query');
           const host = uriHost ? "/" + Buffer.from(uriHost.value).toString('utf8') : "";
-          const path = uriPath ? "/" + Buffer.from(uriPath.value).toString('utf8') : "";
+          const path = uriPath ? "/" + uriPath : "";
           const query = uriQuery ? '?' + Buffer.from(uriQuery.value).toString('utf8') : '';
 
           const method = {
@@ -148,7 +151,7 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
             '0.02': 'POST',
             '0.03': 'PUT',
             '0.04': 'DELETE'
-          }[parsed.code] || 'UNKNOWN';
+          }[packet.code] || 'UNKNOWN';
 
           // Create a mock request/response object compatible with existing handlers
           const req = {
@@ -157,7 +160,6 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
               address : socket.remoteAddress,
               port: socket.remotePort
             },
-
             method: method,
             payload: packet.payload,
             headers: {},
@@ -184,9 +186,18 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
             payload: null,
             options: [],
             headers: {},
-            setOption: function(name, value) {
+            setOption: function(name, values) {
               // Store options for response
-              this.options.push({ name, value });
+              if (!Array.isArray(values)) {
+                this.options.push({
+                  name: name,
+                  value: Buffer.from([values])
+                })
+              } else {
+                for (const value of values) {
+                  this.options.push({ name: name, value })
+                }
+              }
             },
             setHeader: function(name, value) {
               // Store headers for response
@@ -199,16 +210,20 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
                 messageId: packet.messageId,
                 token: packet.token,
                 code: this.code,
-                options: [],
-                headers: {},
+                options: this.options,
+                headers: this.headers,
                 payload: Buffer.isBuffer(data) ? data : Buffer.from(data || this.payload || '')
               };
-              
+
               // Generate CoAP response buffer
               const responseBuffer = coapPacket.generate(responsePacket);
               
-              // Send encrypted response through DTLS socket
-              socket.write(responseBuffer);
+              try{
+                // Send encrypted response through DTLS socket
+                socket.write(responseBuffer);
+              }catch(err){
+                console.log(`[DTLS SERVER] error writing on socket: ${err}`)
+              }
             }
           };
           
@@ -228,9 +243,9 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
           }
           else if (method === 'POST' && path === '/rd') {
 
-            handleRegister(req, res, 'dtls', validation)
+            handleRegister(req, res, 'coaps', validation)
               .then(({ ep, location }) => {
-                sharedEmitter.emit('registration', { protocol: 'dtls', ep, location });
+                sharedEmitter.emit('registration', { protocol: 'coaps', ep, location });
               })
               .catch((err) => {
                 console.error(`[DTLS Server] Register error: ${err.message}`);
@@ -239,16 +254,16 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
           } else if (method === 'PUT' && path.startsWith('/rd/')) {
             handleUpdate(req, res, path)
               .then(({ ep, location }) => {
-                sharedEmitter.emit('update', { protocol: 'dtls', ep, location });
+                sharedEmitter.emit('update', { protocol: 'coaps', ep, location });
               })
               .catch((err) => {
-                console.error(`[DTLS Server] Update error: ${err.message}`);
+                console.error(`[coaps Server] Update error: ${err.message}`);
               });
 
           } else if (method === 'DELETE' && path.startsWith('/rd/')) {
             handleDeregister(req, res, path)
               .then(({ ep }) => {
-                sharedEmitter.emit('deregistration', { protocol: 'dtls', ep });
+                sharedEmitter.emit('deregistration', { protocol: 'coaps', ep });
               })
               .catch((err) => {
                 console.error(`[DTLS Server] Deregister error: ${err.message}`);
@@ -444,6 +459,7 @@ function dispatchRequest(ep, method, path, payload = null, options = {}) {
       token : response.token, 
       payload: decodedPayload, 
       options,
+      code : response.code
     };
   });
 
@@ -463,7 +479,7 @@ function getRequest(ep, path, format = 'text') {
 
 function startObserveRequest(ep, path, observe = 0, format = 'text') {
   return dispatchRequest(ep, 'GET', path, null, { observe, format: CONTENT_FORMATS[format] })
-    .then(({ token }) => {
+    .then(({ token, code }) => {
       try {
         // Register the observation in the registry
         registerObservation(token, ep, path, format);
@@ -473,6 +489,7 @@ function startObserveRequest(ep, path, observe = 0, format = 'text') {
       }
     })
     .catch((error) => {
+      console.log(error)
       console.error(`[Start Observe Error] Failed to start observation for client "${ep}" on path "${path}": ${error.message}`);
       throw new Error(`Start Observe Request Error: ${error.message}`);
     });
