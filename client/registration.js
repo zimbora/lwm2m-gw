@@ -144,9 +144,15 @@ function updateRegistration(host, port = 5683, timeoutMs = 300, protocol = 'coap
   });
 }
 
-function deregister(host, port = 5683, timeoutMs = 300) {
+function deregister(host, port = 5683, timeoutMs = 300, protocol) {
   return new Promise((resolve, reject) => {
     if (!registrationLocation) return reject('Not registered.');
+
+    let timeout = setTimeout(() => {
+      //req.abort(); // cancel the CoAP request
+      clearTimeout(timeout); // cancel the scheduled timeout
+      return reject(new Error('Server did not respond to deregistration (timeout)'));
+    }, timeoutMs);
 
     if (protocol === 'coaps') {
       // Use DTLS request for coaps
@@ -154,12 +160,13 @@ function deregister(host, port = 5683, timeoutMs = 300) {
         hostname: host,
         port,
         pathname: registrationLocation,
-        method: 'PUT',
+        confirmable: true,
+        method: 'DELETE',
       }, (err, res) => {
         clearTimeout(timeout); // cancel the scheduled timeout
         if (err) return reject(err);
         if (res.code !== '2.02') {
-          $.logger.error(`[Client] Registration failed: ${res.code}`);
+          $.logger.error(`[Client] Error Deregistering: ${res.code}`);
           $.logger.error(res);
           return reject(new Error(res.payload.toString()));
         }
@@ -175,12 +182,6 @@ function deregister(host, port = 5683, timeoutMs = 300) {
         pathname: registrationLocation,
         confirmable: true,
       });
-
-      let timeout = setTimeout(() => {
-        //req.abort(); // cancel the CoAP request
-        clearTimeout(timeout); // cancel the scheduled timeout
-        return reject(new Error('Server did not respond to deregistration (timeout)'));
-      }, timeoutMs);
 
       req.on('response', (res) => {
         clearTimeout(timeout); // cancel the scheduled timeout
