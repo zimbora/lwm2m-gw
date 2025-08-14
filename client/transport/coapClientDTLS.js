@@ -3,9 +3,9 @@ const { dtls } = require('node-dtls-client');
 
 function sendDTLSCoapRequest(options, callback) {
   // options: { hostname, port, pathname, method, query, options, payload, psk }
-    if (!options || !options.hostname || !options.port) {
-        return callback(new Error('Invalid options: hostname and port are required'));
-    }
+  if (!options || !options.hostname || !options.port) {
+      return callback(new Error('Invalid options: hostname and port are required'));
+  }
 
   // Map method to CoAP code
   const methodMap = { GET: '0.01', POST: '0.02', PUT: '0.03', DELETE: '0.04' };
@@ -62,7 +62,7 @@ function sendDTLSCoapRequest(options, callback) {
     } catch (err) {
       callback(new Error(`Failed to parse CoAP response: ${err.message}`));
     }
-    socket.close();
+    //socket.close();
   });
 
   socket.on('error', (err) => {

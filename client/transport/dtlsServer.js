@@ -14,88 +14,124 @@ function createServer(handler, port = 56831, dtlsOptions = {}) {
     $.logger.info(`[Client] DTLS secure connection from ${socket.remoteAddress}:${socket.remotePort}`);
 
     socket.on('data', (data) => {
-      try {
-        // Process incoming CoAP message over DTLS
-        // Parse the CoAP packet using coap-packet library
-        const parsed = packet.parse(data);
-        if (!parsed) {
-          $.logger.error('[Client] Failed to parse CoAP message over DTLS');
-          return;
-        }
+      
+      //console.log(socket);
+      // Process incoming CoAP message over DTLS
+      // Parse the CoAP packet using coap-packet library
+      var parsed = null;
+      try{
+        parsed = packet.parse(data);
+      }catch(err){
+        console.log(err)
+      }
 
-        const method = {
-          '0.01': 'GET',
-          '0.02': 'POST',
-          '0.03': 'PUT',
-          '0.04': 'DELETE'
-        }[parsed.code] || 'UNKNOWN';
+      if (!parsed) {
+        $.logger.error('[Client] Failed to parse CoAP message over DTLS');
+        return;
+      }
 
-        // Create a CoAP request-like object
-        const req = {
-          method: method,
-          url: parsed.url || '/',
-          headers: {},
-          payload: parsed.payload,
-          code: parsed.code,
-          token: parsed.token,
-          messageId: parsed.messageId,
-          ack: parsed.ack,
-          reset: parsed.reset
-        };
+      const method = {
+        '0.01': 'GET',
+        '0.02': 'POST',
+        '0.03': 'PUT',
+        '0.04': 'DELETE'
+      }[parsed.code] || 'UNKNOWN';
 
-        // Convert options to headers format
-        if (parsed.options) {
-          parsed.options.forEach(opt => {
-            if (opt.name === 'Uri-Path') {
-              // Build URL from Uri-Path options
-              if (!req.url || req.url === '/') {
-                req.url = '';
-              }
-              req.url += '/' + opt.value.toString();
-            } else {
-              req.headers[opt.name] = opt.value;
+      // Create a CoAP request-like object
+      const req = {
+        rsinfo:{
+          address: socket?.remoteAddress,
+          port: socket?.remotePort,
+        },
+        method: method,
+        url: parsed?.url || '/',
+        headers: {},
+        payload: parsed?.payload,
+        code: parsed?.code,
+        _packet: parsed?.packet,
+        messageId: parsed?.messageId,
+        ack: parsed?.ack,
+        reset: parsed?.reset
+      };
+
+      // Convert options to headers format
+      if (parsed?.options) {
+        parsed.options.forEach(opt => {
+          if (opt.name === 'Uri-Path') {
+            // Build URL from Uri-Path options
+            if (!req.url || req.url === '/') {
+              req.url = '';
             }
-          });
-        }
+            req.url += '/' + opt.value.toString();
+          } else {
+            req.headers[opt.name] = opt.value;
+          }
+        });
+      }
 
-        // Ensure URL starts with /
-        if (!req.url.startsWith('/')) {
-          req.url = '/' + req.url;
-        }
+      // Ensure URL starts with /
+      if (!req.url.startsWith('/')) {
+        req.url = '/' + req.url;
+      }
 
+      let res = {}
+      try{
         // Create a CoAP response-like object
-        const res = {
+        res = {
           code: '2.05',
           payload: null,
           options: [],
-          setOption: function(name, value) {
-            this.options.push({ name, value });
+          headers: {},
+          token: Buffer.alloc(12),
+          setToken: function (token) {
+            token.copy(this.token);
           },
-          end: function(payload) {
-            this.payload = payload;
+          setOption: function(name, values) {
+            console.log(values)
+            // Store options for response
+            if (!Array.isArray(values)) {
+              this.options.push({
+                name: name,
+                value: Buffer.from([values])
+              })
+            } else {
+              for (const value of values) {
+                this.options.push({ name: name, value })
+              }
+            }
+          },
+          setHeader: function(name, value) {
+            // Store headers for response
+            this.headers[name] = value;
+          },  
+          end: function(data) {
             // Send CoAP response back over DTLS
             try {
-              const response = packet.generate({
+              const rspPacket = {
                 code: this.code,
-                payload: Buffer.from(this.payload || ''),
-                options: this.options,
-                token: req.token,
+                token: Buffer.isBuffer(this.token) ? this.token : Buffer.from( this.token || ''),
                 messageId: req.messageId,
-                ack: true
-              });
-              socket.write(response);
+                ack: true,
+                options: this.options,
+                headers: this.headers,
+                payload: Buffer.isBuffer(data) ? data : Buffer.from(data || this.data || '')
+              };
+              console.log("rspPacket")
+              console.log(rspPacket)
+
+              socket.write(packet.generate(rspPacket));
             } catch (error) {
               $.logger.error(`[Client] Failed to generate CoAP response over DTLS: ${error.message}`);
             }
           }
         };
-
-        if (handler && typeof handler === 'function') {
-          handler(req, res);
-        }
-      } catch (error) {
-        $.logger.error(`[Client] DTLS message processing error: ${error.message}`);
+      }catch(err){
+        console.log(err)
       }
+      if (handler && typeof handler === 'function') {
+        handler(req, res);
+      }
+      
     });
 
     socket.on('error', (err) => {

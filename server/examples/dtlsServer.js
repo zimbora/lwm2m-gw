@@ -19,6 +19,20 @@
 
 const path = require('path');
 
+const { 
+  startLwM2MCoapServer,
+  startLwM2MMqttServer,
+  discoveryRequest,
+  getRequest,
+  startObserveRequest,
+  stopObserveRequest,
+  putRequest,
+  postRequest,
+  deleteRequest,
+  createRequest,
+} = require('../resourceClient');
+
+const sharedEmitter = require('../transport/sharedEmitter');
 const { startLwM2MDTLSCoapServer } = require('../resourceClient');
 
 // Validation function for client registration
@@ -54,6 +68,94 @@ function identityPskCallback(identity, sessionId) {
 
   return psk;
 }
+
+async function getInfo(clientEp) {
+  // Delay to wait for client registration
+
+  setTimeout(() => {
+    const client = clientEp;
+    //console.log(`sending requests to client: ${client}`)
+
+    try{
+      /*
+      // Read
+      discoveryRequest(clientEp)
+    
+      getRequest(clientEp,'/3/0/0')
+
+      */
+      //getRequest(clientEp,'/3303/0/5601')
+
+      // Observe timestamp
+      startObserveRequest(clientEp,'/6/0/7');
+
+      // Observe Temperature
+      //startObserveRequest(clientEp,'/3303/0/5700');
+
+      /*
+      // Write
+      setTimeout(() => putRequest(clientEp,'/3303/0/5601', "-30.0"), 2000);
+
+      setTimeout(() => getRequest(clientEp,'/3303/0/5601'), 3000);
+      */
+    }catch(error){
+      console.error(error);
+    }
+    // Execute
+    //setTimeout(() => sendCoapRequest(client, 'POST', '/3/0/2'), 9000);
+  }, 2000);
+
+  /*
+    This doesn't work, client is set to undefined!!
+    Investigate it..
+  setTimeout(() => {
+    const client = clientEp;
+    try{
+      getRequest(clientEp,'/3303/0/5601');
+    }catch(error){
+      console.error(error);
+    }
+  }, 10000);
+  */
+}
+
+// Listen for registration events
+sharedEmitter.on('registration', ({ protocol, ep, location }) => {
+  console.log(`[Event] Client registered via ${protocol}: ${ep} at ${location}`);
+  getInfo(ep);
+});
+
+// Listen for update events
+sharedEmitter.on('update', ({ protocol, ep, location }) => {
+  console.log(`[Event] Client updated via ${protocol}: ${ep} at ${location}`);
+});
+
+// Listen for deregistration events
+sharedEmitter.on('deregistration', ({ protocol, ep }) => {
+  console.log(`[Event] Client deregistered via ${protocol}: ${ep}`);
+});
+
+sharedEmitter.on('observation', ({ protocol, ep, token, method, path, payload }) => {
+  
+  console.log(`[Event] Data received via: ${ep}/${method}${path}`);
+  console.log(`[Event] payload: ${payload}`);
+});
+
+sharedEmitter.on('response', ({ protocol, ep, method, path, payload, options, error }) => {
+  //console.log(options)
+  if(path == "/.well-known/core"){
+    
+  }else{
+    console.log(`[Event] Client response ${protocol}: ${ep}/${method}${path}`);
+    if(payload != null)
+      console.log(`[Event] Client payload ${payload}`);
+  }
+
+});
+
+sharedEmitter.on('error', (error) => {
+  console.error(error);
+});
 
 try {
   console.log('[DTLS Example] Starting DTLS-enabled LwM2M server...');

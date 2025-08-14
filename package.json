@@ -6,6 +6,7 @@
     "cbor": "^10.0.9",
     "coap": "^0.26.0",
     "coap-packet": "^1.1.1",
+    "crypto": "^1.0.1",
     "mqtt": "^5.13.3",
     "node-dtls-client": "^1.1.1",
     "node-mbedtls-server": "^3.1.1",

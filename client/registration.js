@@ -15,10 +15,6 @@ function registerToServer(endpointName, serverHost, serverPort, localPort = 5683
         pathname: '/rd',
         method: 'POST',
         query: `ep=${endpointName}&lt=300&b=U&port=${localPort}`,
-        options: {
-          'Content-Format': 'application/link-format'
-        },
-        payload: '</3/0>,</3303/0>'
       }, (err, res) => {
         if (err) return reject(err);
         if (res.code !== '2.01') {
@@ -57,6 +53,7 @@ function registerToServer(endpointName, serverHost, serverPort, localPort = 5683
       req.write('</3/0>,</3303/0>'); // Example object links
 
       req.on('response', (res) => {
+        clearTimeout(timeout); // cancel the scheduled timeout
         if (res.code !== '2.01') {
           $.logger.error(`[Client] Registration failed: ${res.code}`);
           $.logger.error(res);
@@ -76,7 +73,11 @@ function registerToServer(endpointName, serverHost, serverPort, localPort = 5683
         resolve();
       });
 
-      req.on('error', reject);
+      req.on('error', (err)=>{
+        clearTimeout(timeout); // cancel the scheduled timeout
+        return reject(err);
+      });
+
       req.end();
 
     }
@@ -84,33 +85,62 @@ function registerToServer(endpointName, serverHost, serverPort, localPort = 5683
     
 }
 
-function updateRegistration(host, port = 5683, timeoutMs = 300) {
+function updateRegistration(host, port = 5683, timeoutMs = 300, protocol = 'coap') {
   return new Promise((resolve, reject) => {
     if (!registrationLocation) return reject('Not registered.');
-
-    const req = coap.request({
-      hostname: host,
-      port,
-      method: 'PUT',
-      pathname: registrationLocation,
-      confirmable: true,
-    });
 
     let timeout = setTimeout(() => {
       //req.abort(); // cancel the CoAP request
       reject(new Error('Server did not respond to registration update (timeout)'));
     }, timeoutMs);
 
-    req.on('response', (res) => {
-      $.logger.info(`[Client] Sent Update. Response code: ${res.code}`);
-      resolve();
-    });
+    if (protocol === 'coaps') {
+      // Use DTLS request for coaps
+      sendDTLSCoapRequest({
+        hostname: host,
+        port,
+        pathname: registrationLocation,
+        method: 'PUT',
+      }, (err, res) => {
+        clearTimeout(timeout); // cancel the scheduled timeout
+        if (err) return reject(err);
+        if (res.code !== '2.04') {
+          $.logger.error(`[Client] Error Updating registration: ${res.code}`);
+          return reject(new Error(res.payload.toString()));
+        }
+        $.logger.info(`[Client] Registration update. Location: ${registrationLocation}`);
+        resolve();
+      });
+      return;
+    }else{
+      const req = coap.request({
+        hostname: host,
+        port,
+        method: 'PUT',
+        pathname: registrationLocation,
+        confirmable: true,
+      });
 
-    req.on('error', (error) => {
-      $.logger.info(`[Client] Error Updating registration: ${error}`);
-      reject(error);
-    });
-    req.end();
+      let timeout = setTimeout(() => {
+        //req.abort(); // cancel the CoAP request
+        clearTimeout(timeout); // cancel the scheduled timeout
+        return reject(new Error('Server did not respond to registration update (timeout)'));
+      }, timeoutMs);
+
+      req.on('response', (res) => {
+        $.logger.info(`[Client] Sent Update. Response code: ${res.code}`);
+        clearTimeout(timeout); // cancel the scheduled timeout
+        return resolve();
+      });
+
+      req.on('error', (error) => {
+        $.logger.info(`[Client] Error Updating registration: ${error}`);
+        clearTimeout(timeout); // cancel the scheduled timeout
+        return reject(error);
+      });
+
+      req.end();
+    }
   });
 }
 
@@ -118,26 +148,53 @@ function deregister(host, port = 5683, timeoutMs = 300) {
   return new Promise((resolve, reject) => {
     if (!registrationLocation) return reject('Not registered.');
 
-    const req = coap.request({
-      hostname: host,
-      port,
-      method: 'DELETE',
-      pathname: registrationLocation,
-      confirmable: true,
-    });
+    if (protocol === 'coaps') {
+      // Use DTLS request for coaps
+      sendDTLSCoapRequest({
+        hostname: host,
+        port,
+        pathname: registrationLocation,
+        method: 'PUT',
+      }, (err, res) => {
+        clearTimeout(timeout); // cancel the scheduled timeout
+        if (err) return reject(err);
+        if (res.code !== '2.02') {
+          $.logger.error(`[Client] Registration failed: ${res.code}`);
+          $.logger.error(res);
+          return reject(new Error(res.payload.toString()));
+        }
+        $.logger.info(`[Client] Deregistered on location: ${path}`);
+        resolve();
+      });
+      return;
+    }else{
+      const req = coap.request({
+        hostname: host,
+        port,
+        method: 'DELETE',
+        pathname: registrationLocation,
+        confirmable: true,
+      });
 
-    let timeout = setTimeout(() => {
-      //req.abort(); // cancel the CoAP request
-      reject(new Error('Server did not respond to deregistration (timeout)'));
-    }, timeoutMs);
+      let timeout = setTimeout(() => {
+        //req.abort(); // cancel the CoAP request
+        clearTimeout(timeout); // cancel the scheduled timeout
+        return reject(new Error('Server did not respond to deregistration (timeout)'));
+      }, timeoutMs);
 
-    req.on('response', (res) => {
-      $.logger.info(`[Client] Sent Deregister. Response code: ${res.code}`);
-      resolve();
-    });
+      req.on('response', (res) => {
+        clearTimeout(timeout); // cancel the scheduled timeout
+        $.logger.info(`[Client] Sent Deregister. Response code: ${res.code}`);
+        return resolve();
+      });
 
-    req.on('error', reject);
-    req.end();
+      req.on('error', (error) => {
+        $.logger.info(`[Client] Error Deregistering: ${error}`);
+        clearTimeout(timeout); // cancel the scheduled timeout
+        return reject(error);
+      });
+      req.end();
+    }
   });
 }
 

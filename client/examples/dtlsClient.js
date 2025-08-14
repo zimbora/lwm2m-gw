@@ -16,6 +16,10 @@ const serverPort = 5684; // DTLS server port
 const endpointName = 'node-dtls-client-001';
 const localPort = 56831; // DTLS server port
 
+
+const RETRY_INTERVAL = 10000; // Every 10s
+let updateTimer = null;
+
 /**
  * @param {Buffer} identity
  * @param {Buffer} sessionId
@@ -105,6 +109,42 @@ function identityPskCallback(identity, sessionId) {
     process.exit(1);
   }
 })();
+
+monitorServerConnection(); // Start periodic update checks
+
+async function monitorServerConnection() {
+  
+  updateTimer = setInterval(async () => {
+    if (!$.client.registered){
+      try {
+          $.logger.info('[DTLS Client] Attempting re-registration...');
+          await registerToServer(endpointName, serverHost, serverPort, localPort, 300, 'coaps');
+          $.client.registered = true;
+          monitorServerConnection(); // restart updates
+        } catch (regErr) {
+          $.logger.error(`[DTLS Client] Re-registration failed: ${regErr.message}`);
+        }
+        return;
+    }
+
+    try {
+      await updateRegistration(serverHost, serverPort, 300, 'coaps');
+      $.logger.debug('[DTLS Client] Sent registration update.');
+    } catch (err) {
+      $.logger.error(`[DTLS Client] Lost connection to server during update: ${err.message}`);
+      $.client.registered = false;
+
+      $.logger.info('[DTLS Client] Attempting re-registration...');
+      try {
+        await registerToServer(endpointName, serverHost, serverPort, localPort, 300, 'coaps');
+        $.client.registered = true;
+      } catch (regErr) {
+        $.logger.error(`[DTLS Client] Re-registration failed: ${regErr.message}`);
+      }
+      
+    }
+  }, RETRY_INTERVAL);
+}
 
 // Graceful shutdown
 process.on('SIGINT', async () => {

@@ -1,4 +1,5 @@
 // client/routes.js
+const crypto = require('crypto');
 
 const { encodeResourcesToCBOR, decodeCBOR } = require('../utils/cbor');
 const { encodeTLV, decodeTLV } = require('../utils/tlv');
@@ -40,27 +41,45 @@ function handleDiscoveryRequest(res) {
 
 function handleGetRequest(req, res, { objectId, instanceId, resourceId, resource, observers, path }) {
   const value = typeof resource.value === 'function' ? resource.value() : resource.value;
-
   if (req.headers?.observe !== undefined || req.headers?.Observe !== undefined) {
     if (!resource?.observable) {
       res.code = '4.05';
       return res.end('Observe not allowed');
     }
 
-    if (req.headers?.observe == 0 || req.headers?.Observe == 0) {
-      $.logger.info(`start observation for:${objectId,instanceId,resourceId}`);
+    let Observe = null;
+    if (req.headers?.observe){
+      Observe = req.headers.observe;
+    }else if(req.headers?.Observe){
+      Observe = req.headers.Observe;
+    }
+
+    function bufferToNumber(buf) {
+      let num = 0;
+      for (let i = 0; i < buf.length; i++) {
+        num = (num << 8) | buf[i]; // big-endian
+      }
+      return num;
+    }
+    
+    Observe = Buffer.isBuffer(Observe) ? bufferToNumber(Observe) : Observe;
+
+    if (Observe == 0) {
+      $.logger.info(`start observation for:${objectId}/${instanceId}/${resourceId}`);
       res.setOption('Observe', 0);
+      const token = crypto.randomBytes(12);
+      res.setToken(token);
       res.end(String(value));
 
       if (!observers[path]) observers[path] = [];
-
+      
       observers[path].push({
         address: req.rsinfo.address,
         port: 5683,
-        token: req._packet.token,
+        token: token,
         observeSeq: 1,
       });
-
+      
       if (!resource._interval) {
         resource._interval = setInterval(() => {
           const val = resource.value;
@@ -148,6 +167,10 @@ function handlePutRequest(req, res, { objectId, instanceId, resourceId, resource
     res.code = '2.04';
     res.end();
 
+    /* value has changed. 
+    * If there is an observer for that path, 
+    * send a notification with new value
+    */
     if (observers[path]) {
       observers[path].forEach(observer => {
         try {
