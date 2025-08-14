@@ -1,6 +1,8 @@
 // client/transport/dtlsServer.js
 
 const dtlsMbed = require('node-mbedtls-server');
+// dtlsClient is not being used but is the high level api from lib
+// check if should be changed in the future
 const { dtls, dtlsClient } = require('node-dtls-client');
 const packet = require('coap-packet');
 const path = require('path');
