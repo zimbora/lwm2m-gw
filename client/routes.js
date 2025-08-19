@@ -52,10 +52,11 @@ function handleGetRequest(req, res, { objectId, instanceId, resourceId, resource
       return res.end('Observe not allowed');
     }
 
+    console.log(req.headers);
     let Observe = null;
-    if (req.headers?.observe){
+    if (req.headers?.observe != null){
       Observe = req.headers.observe;
-    }else if(req.headers?.Observe){
+    }else if(req.headers?.Observe != null){
       Observe = req.headers.Observe;
     }
 
