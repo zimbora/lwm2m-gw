@@ -1,5 +1,4 @@
 // client/routes.js
-const crypto = require('crypto');
 
 let sendNotification, stopObservation;
 if ($.protocol === 'coaps') {
@@ -52,7 +51,6 @@ function handleGetRequest(req, res, { objectId, instanceId, resourceId, resource
       return res.end('Observe not allowed');
     }
 
-    console.log(req.headers);
     let Observe = null;
     if (req.headers?.observe != null){
       Observe = req.headers.observe;
@@ -71,10 +69,15 @@ function handleGetRequest(req, res, { objectId, instanceId, resourceId, resource
     Observe = Buffer.isBuffer(Observe) ? bufferToNumber(Observe) : Observe;
 
     if (Observe == 0) {
-      $.logger.info(`start observation for:${objectId}/${instanceId}/${resourceId}`);
+      const token = Buffer.isBuffer(req._packet?.token) ? req._packet?.token.toString('hex') : req._packet?.token;
+
+      $.logger.info(`start observation for:${objectId}/${instanceId}/${resourceId} with token ${token}`);
       res.setOption('Observe', 0);
-      const token = crypto.randomBytes(12);
-      res.setToken(token);
+      if ($.protocol === 'coaps') {
+        res.token = req._packet?.token;
+      }else if ($.protocol === 'coap') {
+        res.setToken(req._packet?.token);
+      }
       res.end(String(value));
 
       if (!observers[path]) observers[path] = [];

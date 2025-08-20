@@ -1,4 +1,5 @@
 // server/transport/coapClientDTLS.js
+const crypto = require('crypto');
 const coapPacket = require('coap-packet');
 const { dtls } = require('node-dtls-client');
 const sharedEmitter = require('./sharedEmitter');
@@ -18,6 +19,8 @@ function sendDTLSCoapRequest(client, method, path, payload = null, query = '', o
       return reject(new Error('Invalid client: address is required'));
     }
 
+    let token = null
+
     // Map method to CoAP code
     const methodMap = { GET: '0.01', POST: '0.02', PUT: '0.03', DELETE: '0.04' };
     const code = methodMap[method.toUpperCase()] || '0.01';
@@ -32,19 +35,21 @@ function sendDTLSCoapRequest(client, method, path, payload = null, query = '', o
     if (options.format) {
       coapOptions.push({ name: 'Content-Format', value: Buffer.from(options.format.toString()) });
     }
-
+    
     if (options.observe !== undefined) {
       coapOptions.push({ name: 'Observe', value: Buffer.from([options.observe]) });
+      token = crypto.randomBytes(8);
     }
 
     const coapReq = coapPacket.generate({
       confirmable: options?.confirmable !== false,
       messageId: Math.floor(Math.random() * 65535),
+      token: token ? Buffer.from(token,'hex') : Buffer.alloc(0),
       code,
       options: coapOptions,
       payload: payload ? Buffer.from(payload) : Buffer.alloc(0)
     });
-
+    
     const socket = dtls.createSocket({
       type: "udp4",
       address: client.address,
@@ -74,6 +79,7 @@ function sendDTLSCoapRequest(client, method, path, payload = null, query = '', o
       clearTimeout(timeout);
       try {
         const parsed = coapPacket.parse(msg);
+        console.log("token received on observation request:",parsed?.token.toString('hex'));
         resolve({ code: parsed.code, token:parsed?.token.toString('hex'), payload: parsed.payload.toString() });
       } catch (err) {
         reject(new Error(`Failed to parse CoAP response: ${err.message}`));

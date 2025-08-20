@@ -16,7 +16,7 @@ function createServer(handler, port = 56830) {
 function sendNotification(observer, path, value) {
   if (!$.client.registered) return;
 
-  $.logger.info(`[Client] Sending notification for ${path}: ${value}`);
+  $.logger.info(`[Client] Sending notification for ${path}: ${value} with token: ${observer.token}`);
 
   const req = coap.request({
     hostname: observer.address,
@@ -24,7 +24,7 @@ function sendNotification(observer, path, value) {
     method: 'GET',
     confirmable: true,
     pathname: '/' + path,
-    token: observer.token,
+    token: Buffer.from(observer.token,'hex'),
   });
 
   req.setOption('Observe', observer.observeSeq & 0xffffff);

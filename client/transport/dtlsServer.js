@@ -51,7 +51,8 @@ function createServer(handler, port = 56831, dtlsOptions = {}) {
         headers: {},
         payload: parsed?.payload,
         code: parsed?.code,
-        _packet: parsed?.packet,
+        //token: Buffer.from(parsed?.token),
+        _packet: parsed,
         messageId: parsed?.messageId,
         ack: parsed?.ack,
         reset: parsed?.reset
@@ -85,7 +86,7 @@ function createServer(handler, port = 56831, dtlsOptions = {}) {
           payload: null,
           options: [],
           headers: {},
-          token: Buffer.alloc(12),
+          token: Buffer.alloc(8),
           setToken: function (token) {
             token.copy(this.token);
           },
@@ -179,12 +180,12 @@ function sendDTLSCoapRequest(options, callback) {
   const coapReq = packet.generate({
     confirmable: true,
     messageId: Math.floor(Math.random() * 65535),
+    token: options.token ? Buffer.from(options.token,'hex') : Buffer.alloc(0),
     code,
-    token: options.token || Buffer.alloc(0),
     options: coapOptions,
     payload: options.payload ? Buffer.from(options.payload) : Buffer.alloc(0)
   });
-
+  
   const timeout = setTimeout(() => {
     return callback(new Error('CoAP DTLS request timed out'));
   }, options.timeout || 1000);
@@ -217,9 +218,9 @@ function sendNotification(observer, path, value) {
   sendDTLSCoapRequest({
     method: 'GET', // notifications are sent as GET with Observe
     pathname: path.startsWith('/') ? path : '/' + path,
-    payload: String(value),
+    token: observer?.token, // passed as string
     extraOptions,         // new field for extra CoAP options
-    token: observer.token, // keep observation link
+    payload: String(value),
     timeout: 2000
   }, (err, res) => {
     if (err) {

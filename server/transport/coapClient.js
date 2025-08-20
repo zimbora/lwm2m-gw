@@ -1,4 +1,5 @@
 // server/transport/coapClient.js
+const crypto = require('crypto');
 const coap = require('coap');
 const sharedEmitter = require('./sharedEmitter');
 
@@ -18,11 +19,16 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
       return reject(new Error('Invalid client: address is required'));
     }
 
+    let token = null;
+    if(options?.observe !== undefined)
+      token = crypto.randomBytes(8);
+
     const reqOpts = {
       hostname: client.address,
       port: client.port || 5683,
       method,
       pathname: path,
+      token : token,
       confirmable: options.confirmable !== false,
       observe: options?.observe !== undefined ? options.observe : undefined,
       query: query !== undefined ? query : undefined,
@@ -59,6 +65,7 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
         if(reqOpts?.observe == 0){
           try{
             token = Buffer.from(res?._packet?.token).toString('hex');
+            console.log("token received on observation request:",token)
           }catch(error){
             reject(new Error(`Failed to get CoAP token: ${error.message}`));
           }
