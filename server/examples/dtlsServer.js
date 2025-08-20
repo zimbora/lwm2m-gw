@@ -209,6 +209,11 @@ try {
   // Handle graceful shutdown
   process.on('SIGINT', () => {
     console.log('\n[DTLS Example] Shutting down server...');
+    
+    // Cleanup observation sockets before server shutdown
+    const { cleanup } = require('../observationRegistry');
+    cleanup();
+    
     if (server && server.close) {
       server.close();
     }
@@ -233,6 +238,11 @@ try {
 // Handle graceful shutdown
 process.on('SIGINT', () => {
   console.log('\n[DTLS Example] Shutting down gracefully...');
+  
+  // Cleanup observation sockets before server shutdown
+  const { cleanup } = require('../observationRegistry');
+  cleanup();
+  
   server.close(() => {
     console.log('[DTLS Example] Server closed');
     process.exit(0);

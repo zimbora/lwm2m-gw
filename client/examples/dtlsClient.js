@@ -205,10 +205,32 @@ async function monitorServerConnection() {
 // Graceful shutdown
 process.on('SIGINT', async () => {
   $.logger.info('[DTLS Client] Shutting down...');
+  
+  // Close the DTLS socket if it exists
+  if ($.client.socket) {
+    try {
+      $.client.socket.close();
+      $.logger.info('[DTLS Client] Closed DTLS socket');
+    } catch (err) {
+      $.logger.error('[DTLS Client] Error closing DTLS socket:', err.message);
+    }
+  }
+  
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
   $.logger.info('[DTLS Client] Shutting down...');
+  
+  // Close the DTLS socket if it exists
+  if ($.client.socket) {
+    try {
+      $.client.socket.close();
+      $.logger.info('[DTLS Client] Closed DTLS socket');
+    } catch (err) {
+      $.logger.error('[DTLS Client] Error closing DTLS socket:', err.message);
+    }
+  }
+  
   process.exit(0);
 });

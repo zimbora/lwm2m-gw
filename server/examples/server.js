@@ -137,6 +137,29 @@ startLwM2MMqttServer('mqtt://broker.hivemq.com', {
 
 setInterval(()=>{
   console.log('[Server] Registered clients:', listClients());
-},60000)
+},60000);
+
+// Handle graceful shutdown
+process.on('SIGINT', () => {
+  console.log('\n[Server] Shutting down gracefully...');
+  
+  // Cleanup observation sockets before server shutdown
+  const { cleanup } = require('../observationRegistry');
+  cleanup();
+  
+  console.log('[Server] Cleaned up observations');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n[Server] Shutting down gracefully...');
+  
+  // Cleanup observation sockets before server shutdown  
+  const { cleanup } = require('../observationRegistry');
+  cleanup();
+  
+  console.log('[Server] Cleaned up observations');
+  process.exit(0);
+});
 
 
