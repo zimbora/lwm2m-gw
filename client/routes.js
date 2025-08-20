@@ -104,7 +104,7 @@ function handleGetRequest(req, res, { objectId, instanceId, resourceId, resource
               return false;
             }
           });
-        }, 2000);
+        }, 60*1000);
       }
     } else {
       stopObservation(resource);

@@ -12,7 +12,7 @@ const serverHost = 'localhost';
 const serverPort = 5683;
 const localPort = 56830;
 
-const RETRY_INTERVAL = 10000; // Every 10s
+const RETRY_INTERVAL = 60*1000; // Every minute
 let updateTimer = null;
 
 $.client = {};

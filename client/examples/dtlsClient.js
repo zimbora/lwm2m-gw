@@ -20,7 +20,7 @@ const endpointName = 'node-dtls-client-001';
 const localPort = 56831; // DTLS server port
 
 
-const RETRY_INTERVAL = 10000; // Every 10s
+const RETRY_INTERVAL = 60*1000; // Every minute
 let updateTimer = null;
 
 /**

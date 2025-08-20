@@ -1,5 +1,5 @@
 // client/objects/temperature.js
-const temperature = {
+var temperature = {
   id: 3303, // LwM2M Temperature Object ID
   instances: [
     {
@@ -67,21 +67,21 @@ const temperature = {
 };
 
 // Simulate sensor updates every 1s
-/*
+
 setInterval(() => {
   const delta = (Math.random() - 0.5) * 0.5;
   const newValue = parseFloat(
-    (temperature.resources[5700].value + delta).toFixed(2)
+    (temperature.instances[0].resources[5700].value + delta).toFixed(2)
   );
-  temperature.resources[5700].value = newValue;
+  temperature.instances[0].resources[5700].value = newValue;
 
   // Update min/max values
-  if (newValue < temperature.resources[5705].value) {
-    temperature.resources[5705].value = newValue;
+  if (newValue < temperature.instances[0].resources[5705].value) {
+    temperature.instances[0].resources[5705].value = newValue;
   }
-  if (newValue > temperature.resources[5706].value) {
-    temperature.resources[5706].value = newValue;
+  if (newValue > temperature.instances[0].resources[5706].value) {
+    temperature.instances[0].resources[5706].value = newValue;
   }
 }, 1000);
-*/
+
 module.exports = temperature;

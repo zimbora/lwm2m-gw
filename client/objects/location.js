@@ -1,5 +1,5 @@
 // client/objects/location.js
-module.exports = {
+var location = {
   id: 6,
   instances:
   [
@@ -44,3 +44,9 @@ module.exports = {
     }
   ]
 };
+
+setInterval(() => {
+  location.instances[0].resources[7].value = Math.floor(Date.now() / 1000);
+},1000);
+
+module.exports = location;
