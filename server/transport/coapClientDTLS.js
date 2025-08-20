@@ -61,9 +61,12 @@ function sendDTLSCoapRequest(client, method, path, payload = null, query = '', o
       return reject(new Error(`Failed to open socket with ep: ${client.location}`));
 
     let timeout = setTimeout(() => {
-      sharedEmitter.emit('error', new Error('CoAP DTLS request timed out'));
-      socket.close();
-      reject(new Error('CoAP DTLS request timed out'));
+      const error = new Error('CoAP DTLS request timed out');
+      sharedEmitter.emit('error', error);
+      try {
+        socket.close();
+      } catch(err) {}
+      reject(error);
     }, options.timeout || 5000);
 
     socket.on("connected", () => {
@@ -80,17 +83,38 @@ function sendDTLSCoapRequest(client, method, path, payload = null, query = '', o
       try {
         const parsed = coapPacket.parse(msg);
         console.log("token received on observation request:",parsed?.token.toString('hex'));
-        resolve({ code: parsed.code, token:parsed?.token.toString('hex'), payload: parsed.payload.toString() });
+        
+        const response = { 
+          code: parsed.code, 
+          token:parsed?.token.toString('hex'), 
+          payload: parsed.payload.toString() 
+        };
+        
+        // For observation requests, include the socket in the response for proper cleanup management
+        if (options.observe !== undefined) {
+          response.socket = socket;
+        }
+        
+        resolve(response);
+        
+        // Close socket for non-observation requests to prevent socket leaks
+        // Observation requests (options.observe !== undefined) keep the socket open for multiple messages
+        if (options.observe === undefined) {
+          socket.close();
+        }
       } catch (err) {
         reject(new Error(`Failed to parse CoAP response: ${err.message}`));
+        // Always close socket on error
+        try {
+          socket.close();
+        } catch(closeErr) {}
       }
-      //socket.close();
     });
 
     socket.on("error", (err) => {
       clearTimeout(timeout);
       sharedEmitter.emit('error', `Error connecting to client: ${client.location}`);
-      reject(`Error connecting to client: ${client.location}`);
+      reject(new Error(`Error connecting to client: ${client.location}`));
       try {
         socket.close();
       }catch(err){}

@@ -479,10 +479,10 @@ function getRequest(ep, path, format = 'text') {
 
 function startObserveRequest(ep, path, observe = 0, format = 'text') {
   return dispatchRequest(ep, 'GET', path, null, { observe, format: CONTENT_FORMATS[format] })
-    .then(({ token, code }) => {
+    .then(({ token, code, socket }) => {
       try {
-        // Register the observation in the registry
-        registerObservation(token, ep, path, format);
+        // Register the observation in the registry, including the socket for cleanup
+        registerObservation(token, ep, path, format, socket);
         return { token, ep, path, format};
       } catch (error) {
         throw new Error(`Register observation error: ${error.message}`);

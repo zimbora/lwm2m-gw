@@ -1,21 +1,22 @@
 // server/ObservationRegistry.js
 
-const registry = new Map(); // token -> { ep, path, format }
+const registry = new Map(); // token -> { ep, path, format, socket }
 
 /**
- * Registers a token observation and associates it with a client (ep), path, and format.
+ * Registers a token observation and associates it with a client (ep), path, format, and optional socket.
  * @param {Buffer|string} token - Unique token for the observation.
  * @param {string} ep - Endpoint of the client.
  * @param {string} path - Path of the resource being observed.
  * @param {string} format - Format of the observation (e.g., text, json, cbor, tlv).
+ * @param {Object} socket - Optional DTLS socket for cleanup.
  */
-function registerObservation(token, ep, path, format) {
+function registerObservation(token, ep, path, format, socket = null) {
   if (!token || !ep || !path || !format) {
     throw new Error('Token, endpoint (ep), path, and format are required to register an observation.');
   }
 
   const tokenKey = token.toString('hex'); // Convert token to a hex string for consistent storage
-  registry.set(tokenKey, { ep, path, format });
+  registry.set(tokenKey, { ep, path, format, socket });
   return true;
 }
 
@@ -34,7 +35,7 @@ function getObservation(token) {
 }
 
 /**
- * Deregisters an observation associated with a given token.
+ * Deregisters an observation associated with a given token and closes its socket if present.
  * @param {Buffer|string} token - Unique token for the observation.
  * @returns {boolean} True if the observation was removed, false if not found.
  */
@@ -44,11 +45,40 @@ function deregisterObservation(token) {
   }
 
   const tokenKey = token.toString('hex'); // Convert token to a hex string
+  const observation = registry.get(tokenKey);
+  
+  if (observation && observation.socket) {
+    // Close the associated socket to prevent socket leaks
+    try {
+      observation.socket.close();
+    } catch (err) {
+      // Ignore errors when closing socket
+    }
+  }
+  
   return registry.delete(tokenKey);
+}
+
+/**
+ * Deregisters all observations and closes any associated sockets.
+ * Useful for cleanup during shutdown.
+ */
+function cleanup() {
+  for (const [tokenKey, observation] of registry) {
+    if (observation.socket) {
+      try {
+        observation.socket.close();
+      } catch (err) {
+        // Ignore errors when closing socket
+      }
+    }
+  }
+  registry.clear();
 }
 
 module.exports = {
   registerObservation,
   getObservation,
   deregisterObservation,
+  cleanup,
 };
