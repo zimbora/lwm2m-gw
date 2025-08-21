@@ -72,32 +72,30 @@ function identityPskCallback(identity, sessionId) {
 async function getInfo(clientEp) {
   // Delay to wait for client registration
 
-  setTimeout(() => {
+  setTimeout(async () => {
     const client = clientEp;
     //console.log(`sending requests to client: ${client}`)
 
     try{
       /*
       // Read
-      discoveryRequest(clientEp)
-    
-      getRequest(clientEp,'/3/0/0')
-
+      await discoveryRequest(clientEp)
       */
-      //getRequest(clientEp,'/3303/0/5601')
+    
+      await getRequest(clientEp,'/3/0/0')
+
+      await getRequest(clientEp,'/3303/0/5601')
 
       // Observe timestamp
-      startObserveRequest(clientEp,'/6/0/7');
+      await startObserveRequest(clientEp,'/6/0/7');
 
       // Observe Temperature
-      startObserveRequest(clientEp,'/3303/0/5700');
+      await startObserveRequest(clientEp,'/3303/0/5700');
 
-      /*
-      // Write
       setTimeout(() => putRequest(clientEp,'/3303/0/5601', "-30.0"), 2000);
 
       setTimeout(() => getRequest(clientEp,'/3303/0/5601'), 3000);
-      */
+      
     }catch(error){
       console.error(error);
     }
@@ -105,9 +103,6 @@ async function getInfo(clientEp) {
     //setTimeout(() => sendCoapRequest(client, 'POST', '/3/0/2'), 9000);
   }, 2000);
 
-  /*
-    This doesn't work, client is set to undefined!!
-    Investigate it..
   setTimeout(() => {
     const client = clientEp;
     try{
@@ -116,7 +111,6 @@ async function getInfo(clientEp) {
       console.error(error);
     }
   }, 10000);
-  */
 }
 
 // Listen for registration events

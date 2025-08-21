@@ -13,6 +13,7 @@ function createServer(handler, port = 56830) {
   return server;
 }
 
+// Notifications are being sent to server lwm2m default port
 function sendNotification(observer, path, value) {
   if (!$.client.registered) return;
 

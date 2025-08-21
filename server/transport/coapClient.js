@@ -1,6 +1,6 @@
 // server/transport/coapClient.js
 const crypto = require('crypto');
-const coap = require('coap');
+const coap = require('coap'); //https://github.com/coapjs/node-coap#readme
 const sharedEmitter = require('./sharedEmitter');
 
 /**
