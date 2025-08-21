@@ -63,6 +63,7 @@ node server/examples/dtlsServer.js
 - **🔧 Developer Friendly**: Extensive examples, tests, and documentation
 - **📊 Multiple Formats**: Support for JSON, CBOR, TLV, and text data formats
 - **🔄 Real-time**: Resource observations and asynchronous notifications
+- **📡 MQTT Integration**: Bidirectional MQTT communication for device management
 
 ---
 
@@ -110,8 +111,9 @@ node server/examples/dtlsServer.js
 |                                      |                                   |                                     |                 |
 | **Transport Layers**                 |                                   |                                     |                 |
 | COAP                                 | ✅ Default                        | ✅ Default                          | 🛑 Not Covered  |
-| MQTT                                 | ⚠️ untested                       | ⚠️ untested                         | 🛑 Not Covered  |
-| Bridge COAP/MQTT                     | 🕐 Planned                        | 🕐 Planned                          | 🛑 Not Covered  |
+| MQTT                                 | ✅ Client support                 | ✅ Server support                   | ✅ Covered      |
+| MQTT Request Handling                | 🛑 Not applicable                 | ✅ Bidirectional communication     | ✅ Covered      |
+| Bridge COAP/MQTT                     | ✅ Implemented                    | ✅ Implemented                      | 🛑 Not Covered  |
 |                                      |                                   |                                     |                 |
 | **Fota**                             |                                   |                                     |                 |
 | UDP                                  | 🕐 Planned                        | 🕐 Planned                          | 🛑 Not Covered  |
@@ -688,6 +690,115 @@ setInterval(() => {
   console.log(`Active devices: ${activeDevices}, Total notifications: ${totalNotifications}`);
 }, 30000);
 ```
+
+---
+
+## 📡 MQTT Integration
+
+The LwM2M server provides comprehensive MQTT integration for bidirectional communication with IoT devices and external systems.
+
+### Features
+
+- **🔄 Bidirectional Communication**: Send requests to devices via MQTT and receive responses
+- **📊 Real-time Data Streaming**: Device sensor data published to MQTT topics
+- **🎯 Device Lifecycle Events**: Registration, updates, and deregistration events via MQTT
+- **🛠️ Complete LwM2M Operations**: Support for GET, PUT, POST, DELETE, DISCOVER, and OBSERVE operations
+- **🔧 Flexible Topic Structure**: Organized topic hierarchy for easy subscription management
+
+### Quick Start
+
+#### 1. Start Enhanced MQTT Gateway
+
+```javascript
+const MqttRequestHandler = require('./server/mqttRequestHandler');
+
+// Start bidirectional MQTT gateway
+node server/examples/serverMqttBidirectional.js
+```
+
+#### 2. Send Requests via MQTT
+
+```bash
+# Read device manufacturer
+mosquitto_pub -h localhost -t "lwm2m/requests/device001/GET/3/0/0" -m "{}"
+
+# Write temperature threshold  
+mosquitto_pub -h localhost -t "lwm2m/requests/device001/PUT/3303/0/5601" -m '{"payload": "-10.0"}'
+
+# Start observing temperature
+mosquitto_pub -h localhost -t "lwm2m/requests/device001/OBSERVE/3303/0/5700" -m "{}"
+```
+
+#### 3. Subscribe to Responses and Data
+
+```bash
+# Listen to device responses
+mosquitto_sub -h localhost -t "lwm2m/responses/+/+/+"
+
+# Listen to sensor data
+mosquitto_sub -h localhost -t "lwm2m/+/sensor/+"
+
+# Listen to device events
+mosquitto_sub -h localhost -t "lwm2m/+/registered"
+```
+
+### MQTT Topic Structure
+
+| Purpose | Topic Pattern | Example |
+|---------|---------------|---------|
+| **Inbound Requests** | `{project}/requests/{endpoint}/{method}{path}` | `lwm2m/requests/device001/GET/3/0/0` |
+| **Outbound Responses** | `{project}/responses/{endpoint}/{method}{path}` | `lwm2m/responses/device001/GET/3/0/0` |
+| **Device Data** | `{project}/{endpoint}/sensor{path}` | `lwm2m/device001/sensor/3303/0/5700` |
+| **Lifecycle Events** | `{project}/{endpoint}/{event}` | `lwm2m/device001/registered` |
+
+### Supported Operations
+
+| Method | Description | Payload Required | Example |
+|--------|-------------|------------------|---------|
+| `GET` | Read resource value | No | Read device manufacturer |
+| `PUT` | Write resource value | Yes | Update configuration |
+| `POST` | Execute resource | Optional | Trigger device reboot |
+| `DELETE` | Delete object instance | No | Remove configuration |
+| `DISCOVER` | Discover available resources | No | List all resources |
+| `OBSERVE` | Start observing resource | No | Monitor temperature |
+| `CANCEL-OBSERVE` | Stop observing resource | No | Stop monitoring |
+
+### Programming Examples
+
+#### Using the MQTT Request Handler
+
+```javascript
+const MqttRequestHandler = require('./server/mqttRequestHandler');
+
+const handler = new MqttRequestHandler({
+  project: 'lwm2m',
+  host: 'localhost', 
+  port: 1883,
+  username: 'user',
+  password: 'pass'
+});
+
+await handler.connect();
+```
+
+#### Integration with Existing Gateway
+
+```javascript
+// server/examples/serverMqttBidirectional.js includes:
+// - Existing outbound data publishing
+// - New inbound request handling  
+// - Unified configuration
+// - Event correlation
+```
+
+#### Demo Client
+
+```bash
+# Run interactive demo
+node server/examples/mqttDemo.js
+```
+
+For detailed documentation, see [MQTT Request Handler Documentation](docs/MQTT_REQUEST_HANDLER.md).
 
 ---
 
