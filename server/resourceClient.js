@@ -1,5 +1,5 @@
 // server/resourceClient.js
-const coap = require('coap');
+const coap = require('coap'); // https://github.com/coapjs/node-coap#readme
 const coapPacket = require('coap-packet');
 const dtls = require('node-mbedtls-server');
 
@@ -14,6 +14,7 @@ const CONTENT_FORMATS = require('../utils/contentFormats');
 
 const { 
   getClient,
+  associateSocketToClient,
 } = require('./clientRegistry');
 
 const coapEnabled = true;
@@ -23,6 +24,7 @@ const mqttEnabled = false;
 
 // === method to initialize client based on protocol ===
 function startLwM2MCoapServer(validation, port = 5683) {
+  //const server = coap.createServer({ type: 'udp6' }) for IPV6
   const server = coap.createServer((req, res) => {
     const path = req?.url.split('?')[0];
     const method = req?.method;
@@ -434,6 +436,9 @@ function dispatchRequest(ep, method, path, payload = null, options = {}) {
 
   // Decode the response payload before returning
   return requestPromise.then((response) => {
+    if(response?.socket?._isClosed == false){
+      associateSocketToClient(ep,response.socket);
+    }
     try {
       decodedPayload = PayloadCodec.decode(response?.payload,options.format)
     } catch (err) {
@@ -479,10 +484,10 @@ function getRequest(ep, path, format = 'text') {
 
 function startObserveRequest(ep, path, observe = 0, format = 'text') {
   return dispatchRequest(ep, 'GET', path, null, { observe, format: CONTENT_FORMATS[format] })
-    .then(({ token, code }) => {
+    .then(({ token, code, socket }) => {
       try {
-        // Register the observation in the registry
-        registerObservation(token, ep, path, format);
+        // Register the observation in the registry, including the socket for cleanup
+        registerObservation(token, ep, path, format, socket);
         return { token, ep, path, format};
       } catch (error) {
         throw new Error(`Register observation error: ${error.message}`);

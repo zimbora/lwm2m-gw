@@ -14,6 +14,8 @@ const sharedEmitter = require('./sharedEmitter');
  * @returns {Promise<Object>} Resolves with response { code, payload, emitter }.
  */
 function sendDTLSCoapRequest(client, method, path, payload = null, query = '', options = {}) {
+  
+  console.log(`send request ${method} ${path}`);
   return new Promise((resolve, reject) => {
     if (!client || !client.address) {
       return reject(new Error('Invalid client: address is required'));
@@ -49,57 +51,80 @@ function sendDTLSCoapRequest(client, method, path, payload = null, query = '', o
       options: coapOptions,
       payload: payload ? Buffer.from(payload) : Buffer.alloc(0)
     });
-    
-    const socket = dtls.createSocket({
-      type: "udp4",
-      address: client.address,
-      port: Number(client.port),
-      psk: { "Client_identity": "secret" } // should be replaced with actual PSK, use client
-    });
 
-    if(!socket)
-      return reject(new Error(`Failed to open socket with ep: ${client.location}`));
-
-    let timeout = setTimeout(() => {
-      sharedEmitter.emit('error', new Error('CoAP DTLS request timed out'));
-      socket.close();
-      reject(new Error('CoAP DTLS request timed out'));
-    }, options.timeout || 5000);
-
-    socket.on("connected", () => {
-      clearTimeout(timeout);
+    let socket = null;
+    if(client?.socket && !client.socket.isClosed){
+      socket = client.socket;
+      
       try{
         socket.send(coapReq);
-      }catch(err){
-        return reject(err);
+
+      }catch(error){
+        console.log(error)
+        reject(error)
       }
-    });
+    }else{
+
+      socket = dtls.createSocket({
+        type: "udp4",
+        address: client.address,
+        port: Number(client.port),
+        psk: { "Client_identity": "secret" } // should be replaced with actual PSK, use client
+      });
+
+      socket.on("connected", () => {
+        clearTimeout(timeout);
+        try{
+          socket.send(coapReq);
+        }catch(err){
+          return reject(err);
+        }
+      });
+
+    }
+
+    // increase time for authentication
+    let timeout = setTimeout(() => {
+      const error = new Error('CoAP DTLS request timed out');
+      sharedEmitter.emit('error', error);
+      try {
+        socket.close();
+      } catch(err) {}
+      reject(error);
+    }, options.timeout || 5000);
 
     socket.on("message", (msg) => {
       clearTimeout(timeout);
       try {
         const parsed = coapPacket.parse(msg);
-        console.log("token received on observation request:",parsed?.token.toString('hex'));
-        resolve({ code: parsed.code, token:parsed?.token.toString('hex'), payload: parsed.payload.toString() });
+        if (options.observe == 0)
+          console.log("token received on observation request:",parsed?.token.toString('hex'));
+        resolve({ code: parsed.code, token:parsed?.token.toString('hex'), payload: parsed.payload.toString(), socket });
       } catch (err) {
         reject(new Error(`Failed to parse CoAP response: ${err.message}`));
       }
-      //socket.close();
+      /*
+      try {
+        socket.close();
+      }catch(err){}
+      */
     });
 
     socket.on("error", (err) => {
       clearTimeout(timeout);
       sharedEmitter.emit('error', `Error connecting to client: ${client.location}`);
-      reject(`Error connecting to client: ${client.location}`);
+      reject(new Error(`Error connecting to client: ${client.location}`));
       try {
         socket.close();
       }catch(err){}
     });
 
     socket.on("close", () => {
+      console.log("socket closed");
       clearTimeout(timeout);
     });
   });
+
 }
 
 module.exports = {

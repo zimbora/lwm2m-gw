@@ -28,6 +28,11 @@ function deregisterClientByLocation(locationPath) {
   return null;
 }
 
+function associateSocketToClient(ep, socket){
+  let client = getClient(ep);
+  clients.set(ep,{ ...client, socket });
+}
+
 function listClients() {
   const result = [];
   for (const [ep, info] of clients.entries()) {
@@ -41,5 +46,6 @@ module.exports = {
   updateClient,
   getClient,
   deregisterClientByLocation,
+  associateSocketToClient,
   listClients,
 };

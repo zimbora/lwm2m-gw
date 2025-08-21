@@ -39,7 +39,7 @@ async function getInfo(clientEp) {
       getRequest(clientEp,'/3303/0/5601')
 
       // Observe timestamp
-      //startObserveRequest(clientEp,'/6/0/7');
+      startObserveRequest(clientEp,'/6/0/7');
 
       // Observe Temperature
       startObserveRequest(clientEp,'/3303/0/5700');
@@ -55,9 +55,6 @@ async function getInfo(clientEp) {
     //setTimeout(() => sendCoapRequest(client, 'POST', '/3/0/2'), 9000);
   }, 2000);
 
-  /*
-    This doesn't work, client is set to undefined!!
-    Investigate it..
   setTimeout(() => {
     const client = clientEp;
     try{
@@ -66,7 +63,6 @@ async function getInfo(clientEp) {
       console.error(error);
     }
   }, 10000);
-  */
 }
 
 // Listen for registration events

@@ -55,7 +55,7 @@ function startResourceServer(port = 56830) {
       return handleCreateRequest(req, res, { objectId, instanceId });
     }
 
-    $.logger.info("get resource:",objectId,instanceId,resourceId);
+    $.logger.debug(`get resource: ${objectId}/${instanceId}/${resourceId}`);
     const resource = getResource(objectId, instanceId, resourceId);
 
     if (!resource) {
