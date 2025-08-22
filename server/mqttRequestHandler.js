@@ -32,70 +32,13 @@ const {
  */
 
 class MqttRequestHandler {
-  constructor(config = {}) {
+  constructor(client, config) { // mqtt client
+    this.client = client;
     this.config = {
       enabled: config.enabled !== false,
       project: config.project || 'lwm2m',
-      host: config.host || 'localhost',
-      port: config.port || 1883,
-      username: config.username || '',
-      password: config.password || '',
-      clientId: config.clientId || 'lwm2m-request-handler',
       ...config
     };
-    
-    this.client = null;
-    this.requestTopic = `${this.config.project}/requests/+/+`;
-  }
-
-  /**
-   * Connect to MQTT broker and start listening for requests
-   */
-  async connect() {
-    if (!this.config.enabled) {
-      console.log('[MQTT Request Handler] Disabled by configuration');
-      return;
-    }
-
-    try {
-      const options = {
-        clientId: this.config.clientId,
-      };
-
-      if (this.config.username) options.username = this.config.username;
-      if (this.config.password) options.password = this.config.password;
-
-      this.client = mqtt.connect(`mqtt://${this.config.host}:${this.config.port}`, options);
-
-      this.client.on('connect', () => {
-        console.log(`[MQTT Request Handler] Connected to broker ${this.config.host}:${this.config.port}`);
-        
-        // Subscribe to request topics
-        this.client.subscribe(this.requestTopic, (err) => {
-          if (err) {
-            console.error('[MQTT Request Handler] Subscribe error:', err);
-          } else {
-            console.log(`[MQTT Request Handler] Subscribed to ${this.requestTopic}`);
-          }
-        });
-      });
-
-      this.client.on('message', (topic, message) => {
-        this.handleIncomingRequest(topic, message);
-      });
-
-      this.client.on('error', (error) => {
-        console.error('[MQTT Request Handler] MQTT error:', error);
-      });
-
-      this.client.on('close', () => {
-        console.log('[MQTT Request Handler] MQTT connection closed');
-      });
-
-    } catch (error) {
-      console.error('[MQTT Request Handler] Failed to connect:', error);
-      throw error;
-    }
   }
 
   /**
@@ -236,19 +179,6 @@ class MqttRequestHandler {
     }
   }
 
-  /**
-   * Disconnect from MQTT broker
-   */
-  async disconnect() {
-    if (this.client) {
-      return new Promise((resolve) => {
-        this.client.end(false, {}, () => {
-          console.log('[MQTT Request Handler] Disconnected from MQTT broker');
-          resolve();
-        });
-      });
-    }
-  }
 }
 
 module.exports = MqttRequestHandler;
