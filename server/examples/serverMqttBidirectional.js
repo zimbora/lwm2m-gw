@@ -53,21 +53,6 @@ const {
 const sharedEmitter = require('../transport/sharedEmitter');
 const { listClients } = require('../clientRegistry');
 
-// Initialize MQTT Request Handler
-const mqttRequestHandler = new MqttRequestHandler({
-  enabled: $.config?.mqttGw?.enabled,
-  project: $.config?.mqttGw?.project,
-  host: $.config?.mqttGw?.host,
-  port: $.config?.mqttGw?.port,
-  username: $.config?.mqttGw?.user,
-  password: $.config?.mqttGw?.pwd,
-  clientId: 'lwm2m-request-handler'
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Promise Rejection:', reason);
-});
-
 async function getInfo(clientEp) {
   // Delay to wait for client registration
   setTimeout(async () => {
@@ -76,7 +61,7 @@ async function getInfo(clientEp) {
 
     try {
       // Read device info
-      await discoveryRequest(clientEp);
+      //await discoveryRequest(clientEp);
       await getRequest(clientEp, '/3/0/0');
       await getRequest(clientEp, '/3303/0/5601');
 
@@ -112,11 +97,16 @@ if ($.config?.mqttGw?.enabled) {
     clientId: $.config?.mqttGw?.client
   });
 
+  mqttRequestHandler = null;
+  
   $.mqttGwClient.on('connect', function () {
     console.log(`[MQTT Gateway] Connected to: ${$.config?.mqttGw?.protocol}:${$.config?.mqttGw?.host}:${$.config?.mqttGw?.port}`);
     
+    // Initialize MQTT Request Handler
+    mqttRequestHandler = new MqttRequestHandler($.mqttGwClient, $.config.mqttGw);
+
     // Subscribe to all topics for monitoring (optional)
-    $.mqttGwClient.subscribe(`${$.config?.mqttGw?.project}/#`, function (err) {
+    $.mqttGwClient.subscribe(`${$.config?.mqttGw?.project}/requests/#`, function (err) {
       if (err) console.log('[MQTT Gateway] Subscribe error:', err);
     });
   });
@@ -124,6 +114,7 @@ if ($.config?.mqttGw?.enabled) {
   $.mqttGwClient.on('message', function (topic, message) {
     // Log all MQTT messages for debugging (optional)
     console.log(`[MQTT Gateway] Received: ${topic} -> ${message.toString()}`);
+    mqttRequestHandler.handleIncomingRequest(topic, message);
   });
 
   $.mqttGwClient.on('error', function (error) {
@@ -258,24 +249,6 @@ console.log('[Startup] Configuration:', $.config);
 // Start LwM2M servers
 startLwM2MCoapServer(validateRegistration);
 
-startLwM2MMqttServer('mqtt://broker.hivemq.com', {
-  port: 1883,
-  username: 'myuser',
-  password: 'mypassword',
-  clientId: 'myLwM2MMqttServer',
-}).then((mqttClient) => {
-  console.log('[Startup] MQTT LwM2M server is running.');
-}).catch((err) => {
-  console.error('[Startup] Failed to start MQTT LwM2M server:', err.message);
-});
-
-// Start MQTT Request Handler for inbound requests
-mqttRequestHandler.connect().then(() => {
-  console.log('[Startup] MQTT Request Handler is running.');
-}).catch((err) => {
-  console.error('[Startup] Failed to start MQTT Request Handler:', err.message);
-});
-
 // Periodic client list
 setInterval(() => {
   const clients = listClients();
@@ -292,16 +265,15 @@ setInterval(() => {
   }
 }, 60000);
 
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Promise Rejection:', reason);
+});
+
 // Graceful shutdown
 process.on('SIGINT', async () => {
   console.log('[Shutdown] Received SIGINT, shutting down gracefully...');
-  try {
-    await mqttRequestHandler.disconnect();
-    process.exit(0);
-  } catch (error) {
-    console.error('[Shutdown] Error during shutdown:', error);
-    process.exit(1);
-  }
+  process.exit(0);
 });
 
 console.log('[Startup] Enhanced LwM2M MQTT Gateway with bidirectional communication started.');
