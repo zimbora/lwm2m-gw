@@ -136,7 +136,7 @@ sharedEmitter.on('registration', ({ protocol, ep, location }) => {
     const payload = { location: location, timestamp: Date.now() };
     $.mqttGwClient.publish(topic, JSON.stringify(payload), { qos: 1 });
   }
-  getInfo(ep);
+  //getInfo(ep);
 });
 
 // Listen for update events

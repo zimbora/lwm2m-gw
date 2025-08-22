@@ -129,8 +129,11 @@ function updateRegistration(host, port = 5683, timeoutMs = 300, protocol = 'coap
       }, timeoutMs);
 
       req.on('response', (res) => {
-        $.logger.info(`[Client] Sent Update. Response code: ${res.code}`);
         clearTimeout(timeout); // cancel the scheduled timeout
+        $.logger.info(`[Client] Sent Update. Response code: ${res.code}`);
+        if(res.code != '2.04'){
+          return reject(new Error("Update registration failed"));
+        }
         return resolve();
       });
 

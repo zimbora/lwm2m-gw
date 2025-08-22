@@ -57,8 +57,8 @@ function handleUpdate(req, res, path) {
       const location = `/rd/${path.split('/').pop()}`;
 
       const ep = updateClient(location, {
-        address: req.rsinfo.address,
-        port: req.rsinfo.port,
+        address: req.rsinfo.address, 
+        //port: req.rsinfo.port, // !! this port is the port used just for this message
         lastUpdate: Date.now(),
       });
 

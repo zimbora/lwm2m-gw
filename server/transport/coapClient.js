@@ -3,6 +3,9 @@ const crypto = require('crypto');
 const coap = require('coap'); //https://github.com/coapjs/node-coap#readme
 const sharedEmitter = require('./sharedEmitter');
 
+// Create a custom agent (UDP socket manager)
+const agent = new coap.Agent({ type: 'udp4' }); // Use 'udp6' for IPv6 if needed
+
 /**
  * Sends a CoAP request.
  * @param {Object} client - Client info object. Must include at least host and port.
@@ -32,6 +35,7 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
       confirmable: options.confirmable !== false,
       observe: options?.observe !== undefined ? options.observe : undefined,
       query: query !== undefined ? query : undefined,
+      agent: agent 
     };
     
     const req = coap.request(reqOpts);
@@ -77,8 +81,13 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
       }
     });
 
+    req.on('close', (err) => {
+      console.log("socket closed");
+    });
+
     req.on('error', (err) => {
       clearTimeout(timeout);
+      console.error("CoAP request error:", err); // Log it!
       sharedEmitter.emit('error', err);
       reject(err);
     });

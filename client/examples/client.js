@@ -51,31 +51,31 @@ async function monitorServerConnection() {
   updateTimer = setInterval(async () => {
     if (!$.client.registered){
       try {
-          $.logger.info('[Client] Attempting re-registration...');
-          await registerToServer(endpointName, serverHost, serverPort, localPort);
-          $.client.registered = true;
-          monitorServerConnection(); // restart updates
-        } catch (regErr) {
-          $.logger.error(`[Client] Re-registration failed: ${regErr.message}`);
-        }
-        return;
-    }
-
-    try {
-      await updateRegistration(serverHost, serverPort);
-      $.logger.debug('[Client] Sent registration update.');
-    } catch (err) {
-      $.logger.error(`[Client] Lost connection to server during update: ${err.message}`);
-      $.client.registered = false;
-
-      $.logger.info('[Client] Attempting re-registration...');
-      try {
-        await registerToServer(endpointName, serverHost, serverPort);
+        $.logger.info('[Client] Attempting re-registration...');
+        await registerToServer(endpointName, serverHost, serverPort, localPort);
         $.client.registered = true;
+        monitorServerConnection(); // restart updates
       } catch (regErr) {
         $.logger.error(`[Client] Re-registration failed: ${regErr.message}`);
       }
-      
+      return;
+    }else{
+      try {
+        await updateRegistration(serverHost, serverPort);
+        $.logger.debug('[Client] Sent registration update.');
+      } catch (err) {
+        $.logger.error(`[Client] Lost connection to server during update: ${err.message}`);
+        $.client.registered = false;
+
+        $.logger.info('[Client] Attempting re-registration...');
+        try {
+          await registerToServer(endpointName, serverHost, serverPort, localPort);
+          $.client.registered = true;
+        } catch (regErr) {
+          $.logger.error(`[Client] Re-registration failed: ${regErr.message}`);
+        } 
+      }
     }
+
   }, RETRY_INTERVAL);
 }
