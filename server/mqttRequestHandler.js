@@ -123,18 +123,21 @@ class MqttRequestHandler {
    * Route the request to the appropriate LwM2M client function
    */
   async routeRequest(endpoint, method, path, payload, options) {
+    // Extract format from options, default to 'text'
+    const format = options.format || 'text';
+    
     switch (method.toUpperCase()) {
       case 'GET':
-        return await getRequest(endpoint, path);
+        return await getRequest(endpoint, path, format);
         
       case 'PUT':
         if (payload === null || payload === undefined) {
           throw new Error('PUT request requires payload');
         }
-        return await putRequest(endpoint, path, payload);
+        return await putRequest(endpoint, path, payload, format);
         
       case 'POST':
-        return await postRequest(endpoint, path, payload);
+        return await postRequest(endpoint, path, payload, format);
         
       case 'DELETE':
         return await deleteRequest(endpoint, path);
@@ -143,10 +146,10 @@ class MqttRequestHandler {
         return await discoveryRequest(endpoint);
         
       case 'OBSERVE':
-        return await startObserveRequest(endpoint, path);
+        return await startObserveRequest(endpoint, path, 0, format);
         
       case 'CANCEL-OBSERVE':
-        return await stopObserveRequest(endpoint, path);
+        return await stopObserveRequest(endpoint, path, 1, format);
         
       default:
         throw new Error(`Unsupported method: ${method}`);
