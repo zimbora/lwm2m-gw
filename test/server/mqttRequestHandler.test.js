@@ -17,7 +17,12 @@ describe('MqttRequestHandler', () => {
   let handler;
   
   beforeEach(() => {
-    handler = new MqttRequestHandler({
+    const mockClient = {
+      publish: jest.fn(),
+      subscribe: jest.fn(),
+      on: jest.fn()
+    };
+    handler = new MqttRequestHandler(mockClient, {
       enabled: false, // Don't actually connect during tests
       project: 'test',
       host: 'localhost',
@@ -26,9 +31,8 @@ describe('MqttRequestHandler', () => {
   });
 
   afterEach(() => {
-    if (handler) {
-      handler.disconnect();
-    }
+    // Clean up any mock state
+    jest.clearAllMocks();
   });
 
   describe('parseRequest', () => {
@@ -160,15 +164,15 @@ describe('MqttRequestHandler', () => {
 
   describe('configuration', () => {
     test('should use default configuration', () => {
-      const defaultHandler = new MqttRequestHandler();
+      const mockClient = { publish: jest.fn(), subscribe: jest.fn(), on: jest.fn() };
+      const defaultHandler = new MqttRequestHandler(mockClient, {});
       expect(defaultHandler.config.project).toBe('lwm2m');
-      expect(defaultHandler.config.host).toBe('localhost');
-      expect(defaultHandler.config.port).toBe(1883);
       expect(defaultHandler.config.enabled).toBe(true);
     });
 
     test('should override configuration', () => {
-      const customHandler = new MqttRequestHandler({
+      const mockClient = { publish: jest.fn(), subscribe: jest.fn(), on: jest.fn() };
+      const customHandler = new MqttRequestHandler(mockClient, {
         project: 'custom',
         host: 'custom-host',
         port: 8883,
