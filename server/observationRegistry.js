@@ -40,6 +40,7 @@ function getObservation(token) {
  * @returns {boolean} True if the observation was removed, false if not found.
  */
 function deregisterObservation(token) {
+
   if (!token) {
     throw new Error('Token is required to deregister an observation.');
   }
@@ -56,6 +57,15 @@ function deregisterObservation(token) {
     }
   }
   return registry.delete(tokenKey);
+}
+
+function findTokenByEpAndPath(ep, path) {
+  for (const [token, value] of registry.entries()) {
+    if (value.ep === ep && value.path === path) {
+      return token;
+    }
+  }
+  return null; // not found
 }
 
 /**
@@ -79,5 +89,6 @@ module.exports = {
   registerObservation,
   getObservation,
   deregisterObservation,
+  findTokenByEpAndPath,
   cleanup
 };

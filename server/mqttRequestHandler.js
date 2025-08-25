@@ -144,7 +144,7 @@ class MqttRequestHandler {
         
       case 'OBSERVE':
         return await startObserveRequest(endpoint, path);
-        
+
       case 'CANCEL-OBSERVE':
         return await stopObserveRequest(endpoint, path);
         

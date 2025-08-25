@@ -107,6 +107,9 @@ function handleGetRequest(req, res, { objectId, instanceId, resourceId, resource
         }, 60*1000);
       }
     } else {
+      $.logger.info(`stop observation for:${objectId}/${instanceId}/${resourceId}`);
+      if(observers[path])
+        delete observers[path];
       stopObservation(resource);
       res.code = '2.05';
       return res.end('Observation stopped');
