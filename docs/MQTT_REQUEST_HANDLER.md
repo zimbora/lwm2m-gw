@@ -51,10 +51,17 @@ Send requests as JSON payload:
 {
   "payload": "value_to_write_or_execute",
   "options": {
-    "format": "text/plain"
+    "format": "json"
   }
 }
 ```
+
+**Supported format values:**
+- `"text"` - Plain text format (default)
+- `"json"` - JSON format  
+- `"cbor"` - CBOR binary format
+- `"tlv"` - LwM2M TLV format
+- `"link"` - Core Link format (used for discovery)
 
 For simple operations, you can send plain text:
 ```
@@ -85,6 +92,40 @@ Responses are always JSON:
   }
 }
 ```
+
+### Format Handling
+
+The MQTT Request Handler supports different content formats for both sending requests to and receiving responses from LwM2M devices. The format is specified in the `options.format` field of the request message.
+
+#### Sending Different Formats
+
+**JSON Format:**
+```json
+{
+  "payload": {"temperature": 25.5},
+  "options": {"format": "json"}
+}
+```
+
+**CBOR Format (binary):**
+```json
+{
+  "payload": {"sensor_data": [1, 2, 3]},
+  "options": {"format": "cbor"}
+}
+```
+
+**TLV Format (LwM2M specific):**
+```json
+{
+  "payload": {"resourceId": 5700, "value": 25.5, "type": "float"},
+  "options": {"format": "tlv"}
+}
+```
+
+#### Receiving Different Formats
+
+Responses from devices will be decoded according to the requested format. The decoded data is returned in the `data` field of the response message. The format affects how the device interprets incoming data and how responses are encoded/decoded.
 
 ## Usage
 
@@ -152,17 +193,26 @@ await mqttRequestHandler.connect();
 ### Using mosquitto_pub to send requests:
 
 ```bash
-# Read device manufacturer
+# Read device manufacturer (default text format)
 mosquitto_pub -h localhost -t "lwm2m/requests/device1/GET/3/0/0" -m "{}"
 
-# Write temperature threshold
+# Read device info in JSON format
+mosquitto_pub -h localhost -t "lwm2m/requests/device1/GET/3/0/0" -m '{"options": {"format": "json"}}'
+
+# Write temperature threshold (plain text)
 mosquitto_pub -h localhost -t "lwm2m/requests/device1/PUT/3303/0/5601" -m '{"payload": "-10.0"}'
+
+# Write configuration in JSON format  
+mosquitto_pub -h localhost -t "lwm2m/requests/device1/PUT/3303/0/5601" -m '{"payload": {"threshold": -10.0}, "options": {"format": "json"}}'
+
+# Write binary data in CBOR format
+mosquitto_pub -h localhost -t "lwm2m/requests/device1/PUT/3303/0/5750" -m '{"payload": {"config": [1,2,3]}, "options": {"format": "cbor"}}'
 
 # Execute reboot
 mosquitto_pub -h localhost -t "lwm2m/requests/device1/POST/3/0/4" -m "{}"
 
-# Start observing temperature
-mosquitto_pub -h localhost -t "lwm2m/requests/device1/OBSERVE/3303/0/5700" -m "{}"
+# Start observing temperature in JSON format
+mosquitto_pub -h localhost -t "lwm2m/requests/device1/OBSERVE/3303/0/5700" -m '{"options": {"format": "json"}}'
 ```
 
 ### Using mosquitto_sub to receive responses:
