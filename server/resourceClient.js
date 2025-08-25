@@ -8,7 +8,7 @@ const { sendCoapRequest } = require('./transport/coapClient');
 const { sendDTLSCoapRequest } = require('./transport/coapClientDTLS');
 const { connectMqttClient, sendMqttRequest } = require('./transport/mqttClient');
 const { handleRegister, handleUpdate, handleDeregister} = require('./handleRegistration');
-const { registerObservation, getObservation, deregisterObservation } = require('./observationRegistry');
+const { registerObservation, getObservation, deregisterObservation, findTokenByEpAndPath } = require('./observationRegistry');
 const PayloadCodec = require('../utils/payloadCodec');
 const CONTENT_FORMATS = require('../utils/contentFormats');
 
@@ -504,6 +504,9 @@ function stopObserveRequest(ep, path, observe = 1, format = 'text') {
   return dispatchRequest(ep, 'GET', path, null, { observe, format: CONTENT_FORMATS[format] })
   .then( ({token}) => {
     try{
+      if(!token){
+        token = findTokenByEpAndPath(ep, path)
+      }
       deregisterObservation(token);
       return { token, ep, path, format};
     }catch(error){
