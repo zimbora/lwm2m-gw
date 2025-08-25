@@ -1,7 +1,7 @@
 const coap = require('coap');
 const sharedEmitter = require('../../server/transport/sharedEmitter');
 const { startLwM2MCoapServer } = require('../../server/resourceClient');
-const { registerObservation, getObservation, deregisterObservation } = require('../../server/observationRegistry');
+const { registerObservation, getObservation, deregisterObservation, cleanup } = require('../../server/observationRegistry');
 
 
 describe('LwM2M CoAP Server - sharedEmitter events', () => {
@@ -18,6 +18,7 @@ describe('LwM2M CoAP Server - sharedEmitter events', () => {
   });
 
   afterAll((done) => {
+    cleanup();
     if (server && typeof server.close === 'function') {
       server.close(done);
     } else {
@@ -98,15 +99,7 @@ describe('LwM2M CoAP Server - sharedEmitter events', () => {
       testPath,
       format = 'text'
     );
-
-    sharedEmitter.once('observation', (event) => {
-      expect(event).toHaveProperty('ep', testEp);
-      expect(event).toHaveProperty('method', 'GET');
-      expect(event).toHaveProperty('path', testPath);
-      expect(event).toHaveProperty('payload'); // May be empty if no payload is sent
-      done();
-    });
-
+    
     const req = coap.request({
       hostname: 'localhost',
       port: 5683,
@@ -117,12 +110,43 @@ describe('LwM2M CoAP Server - sharedEmitter events', () => {
       token: testToken
     });
 
-    //req.setOption('Observe', 0);
-    //req.setOption('Token', testToken);
+    sharedEmitter.once('observation', (event) => {
+      expect(event).toHaveProperty('ep', testEp);
+      expect(event).toHaveProperty('method', 'GET');
+      expect(event).toHaveProperty('path', testPath);
+      expect(event).toHaveProperty('payload'); // May be empty if no payload is sent
+      done();
+    });
+
     req.setOption('Content-Format', 'text/plain');
 
     req.write('test-observe-payload');
     req.end();
+
+  });
+
+  it('should emit "error" when observe request is received and token is not registered', (done) => {
+    
+    const req = coap.request({
+      hostname: 'localhost',
+      port: 5683,
+      method: 'GET',
+      pathname: testPath,
+      confirmable: true,
+      observe: 0,
+      token: 'testWrongToken'
+    });
+
+    sharedEmitter.once('error', (event) => {
+      expect(event).toHaveProperty('error');
+      done();
+    });
+
+    req.setOption('Content-Format', 'text/plain');
+
+    req.write('test-observe-payload');
+    req.end();
+
   });
 
 });

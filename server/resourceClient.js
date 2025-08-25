@@ -72,14 +72,14 @@ function startLwM2MCoapServer(validation, port = 5683) {
           path: observation?.path,
           payload: decodedPayload
         });
-
+        
         if(!observation){
           const error = `Observation is not registered for token ${decodedToken}`
-          res.code = '5.00';
-          res.end('Observation token is not registered');
           sharedEmitter.emit('error', {
             error
           });
+          res.code = '5.00';
+          res.end('Observation token is not registered');
           return;
         }
 

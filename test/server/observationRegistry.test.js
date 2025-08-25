@@ -7,6 +7,7 @@ describe('ObservationRegistry', () => {
   const ep = 'client123';
   const path = '/3/0/13';
   const format = 'text';
+  const socket = null;
 
 
   test('registerObservation stores observation with buffer token', () => {
@@ -14,7 +15,7 @@ describe('ObservationRegistry', () => {
     expect(result).toBe(true);
 
     const observation = getObservation(tokenBuffer);
-    expect(observation).toEqual({ ep, path, format });
+    expect(observation).toEqual({ ep, path, format, socket });
   });
 
   test('registerObservation stores observation with string token', () => {
@@ -22,7 +23,7 @@ describe('ObservationRegistry', () => {
     expect(result).toBe(true);
 
     const observation = getObservation(tokenString);
-    expect(observation).toEqual({ ep, path, format });
+    expect(observation).toEqual({ ep, path, format, socket });
   });
 
   test('getObservation returns null for unknown token', () => {

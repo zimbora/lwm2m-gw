@@ -15,7 +15,7 @@ describe('Bootstrap Server', () => {
   const BOOTSTRAP_PORT = 5685; // Use different port for tests
 
   beforeAll(() => {
-    server = startBootstrapServer(BOOTSTRAP_PORT);
+    server = startBootstrapServer(null, BOOTSTRAP_PORT);
   });
 
   afterAll((done) => {

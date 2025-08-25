@@ -77,7 +77,7 @@ function handleBootstrapRequest(req, res, bootstrapDeviceCall) {
         ep: ep,
         config: config
       };
-
+      
       // Accept the bootstrap request
       res.code = '2.04';
       res.end();
