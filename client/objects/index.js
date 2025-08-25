@@ -30,7 +30,7 @@ function getResource(objectId, instanceId, resourceId) {
   if(instanceId == null)
     instanceId = 0;
 
-  if(!resourceId)
+  if(resourceId == null)
     return getResourceSet(objectId, instanceId);
   else
     return mod?.instances?.[instanceId]?.resources[resourceId] || null;

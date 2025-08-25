@@ -57,7 +57,6 @@ function startResourceServer(port = 56830) {
 
     $.logger.debug(`get resource: ${objectId}/${instanceId}/${resourceId}`);
     const resource = getResource(objectId, instanceId, resourceId);
-
     if (!resource) {
       res.code = '4.04';
       return res.end('Resource not found');

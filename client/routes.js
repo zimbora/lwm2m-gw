@@ -44,6 +44,7 @@ function handleDiscoveryRequest(res) {
 }
 
 function handleGetRequest(req, res, { objectId, instanceId, resourceId, resource, observers, path }) {
+
   const value = typeof resource.value === 'function' ? resource.value() : resource.value;
   if (req.headers?.observe !== undefined || req.headers?.Observe !== undefined) {
     if (!resource?.observable) {
@@ -111,6 +112,7 @@ function handleGetRequest(req, res, { objectId, instanceId, resourceId, resource
       if(observers[path])
         delete observers[path];
       stopObservation(resource);
+      res.setOption('Observe', 1);
       res.code = '2.05';
       return res.end('Observation stopped');
     }

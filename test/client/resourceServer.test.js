@@ -142,28 +142,6 @@ describe('Resource Server', () => {
       method: 'GET',
       pathname: '/4/0/4',
       confirmable: true,
-      observe: 1
-    });
-
-    req.on('response', (res) => {
-      expect(res.code).toBe('2.05');
-      expect(res.headers['Observe']).toBeDefined();
-      expect(res.payload.toString()).not.toBe('');
-
-      const resource = getResource(4, 0, 4);
-      done();
-    });
-
-    req.end();
-  });
-
-  test('should accept observation if resource is observable', (done) => {
-    const req = coap.request({
-      hostname: 'localhost',
-      port: PORT,
-      method: 'GET',
-      pathname: '/4/0/4',
-      confirmable: true,
       observe: 0
     });
 
@@ -171,8 +149,26 @@ describe('Resource Server', () => {
       expect(res.code).toBe('2.05');
       expect(res.headers['Observe']).toBeDefined();
       expect(res.payload.toString()).not.toBe('');
+      done();
+    });
 
-      const resource = getResource(4, 0, 4);
+    req.end();
+  });
+
+  test('should stop observation if resource is in observing mode', (done) => {
+    const req = coap.request({
+      hostname: 'localhost',
+      port: PORT,
+      method: 'GET',
+      pathname: '/4/0/4',
+      confirmable: true,
+      observe: 1,
+    });
+
+    req.on('response', (res) => {
+      expect(res.code).toBe('2.05');
+      expect(res.headers['Observe']).toBeDefined();
+      expect(res.payload.toString()).not.toBe('');
       done();
     });
 
