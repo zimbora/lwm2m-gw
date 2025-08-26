@@ -1,5 +1,5 @@
 {
-  "name": "lwm2m-node",
+  "name": "lwm2m-gw",
   "version": "0.1.0",
   "main": "index.js",
   "dependencies": {
