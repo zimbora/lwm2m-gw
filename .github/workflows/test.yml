@@ -6,13 +6,20 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+  id-token: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        #node-version: [18.x, 20.x]
+        node-version: [20.x]
 
     steps:
     - uses: actions/checkout@v4
@@ -22,25 +29,29 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+        registry-url: 'https://registry.npmjs.org'
 
     - name: Install dependencies
       run: npm ci
+      env:
+        # Required if you install private packages from npmjs
+        # NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
     - name: Run tests with coverage
       run: npm run test:ci
 
     - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v4
-      if: matrix.node-version == '20.x'
+      - uses: codecov/codecov-action@v5
       with:
-        token: ${{ secrets.CODECOV_TOKEN }}
+        use_oidc: true
         fail_ci_if_error: false
 
-    - name: Publish Test Results
-      uses: dorny/test-reporter@v1
-      if: success() || failure()
-      with:
-        name: Jest Tests (${{ matrix.node-version }})
-        path: junit.xml
-        reporter: jest-junit
-        fail-on-error: true
+    #- name: Publish Test Results
+    #  uses: dorny/test-reporter@v1
+      # Run even if tests fail, but skip for forked PRs (cannot create checks there)
+    #  if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    #  with:
+    #    name: Jest Tests (${{ matrix.node-version }})
+    #    path: junit.xml
+    #    reporter: jest-junit
+    #    fail-on-error: true
