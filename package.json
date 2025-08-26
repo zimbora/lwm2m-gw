@@ -14,7 +14,7 @@
   },
   "scripts": {
     "test": "jest",
-    "test:ci": "jest --ci --coverage --reporters=default --reporters=github-actions"
+    "test:ci": "jest --ci --coverage --reporters=default --reporters=github-actions --coverageReporters=text --coverageReporters=lcov --coverageReporters=json-summary"
   },
   "jest": {
     "forceExit": true,
