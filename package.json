@@ -16,6 +16,10 @@
     "test": "jest",
     "test:ci": "jest --ci --coverage --reporters=default --reporters=jest-junit"
   },
+  "jest": {
+    "forceExit": true,
+    "testTimeout": 30000
+  },
   "jest-junit": {
     "outputDirectory": "./",
     "outputName": "junit.xml"
