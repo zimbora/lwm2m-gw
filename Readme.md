@@ -33,25 +33,25 @@ Experience the full LwM2M lifecycle from device provisioning to operation:
 
 #### 1. Launch Bootstrap Server
 ```bash
-node server/bootstrapServer.js | npx pino-pretty
+node server/examples/bootstrapServer.js | npx pino-pretty
 ```
 *Handles device provisioning and security configuration on port 5684*
 
 #### 2. Launch Main LwM2M Server
 ```bash
-node server/server.js | npx pino-pretty
+node server/examples/server.js | npx pino-pretty
 ```
 *Manages registered devices and resource operations on port 5683*
 
 #### 3. Launch Bootstrap Client
 ```bash
-node client/bootstrapClient.js | npx pino-pretty
+node client/examples/bootstrapClient.js | npx pino-pretty
 ```
 *Simulates a device going through the complete bootstrap process*
 
 #### 4. Launch Standard Client
 ```bash
-node client/client.js | npx pino-pretty
+node client/examples/client.js | npx pino-pretty
 ```
 *Simulates a pre-configured device connecting directly*
 
