@@ -3,9 +3,7 @@
 
 [![Tests](https://github.com/zimbora/lwm2m-node/actions/workflows/test.yml/badge.svg)](https://github.com/zimbora/lwm2m-node/actions/workflows/test.yml)
 
-<!-- COVERAGE:START -->
-Coverage: n/a
-<!-- COVERAGE:END -->
+[![codecov](https://codecov.io/gh/zimbora/lwm2m-node/branch/main/graph/badge.svg)](https://codecov.io/gh/zimbora/lwm2m-node)
 
 A comprehensive **Lightweight Machine to Machine (LwM2M)** implementation in Node.js featuring both client and server components with support for CoAP, DTLS encryption, and full bootstrap capabilities.
 
