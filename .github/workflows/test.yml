@@ -46,6 +46,31 @@ jobs:
         use_oidc: true
         fail_ci_if_error: false
 
+    - name: Extract coverage percent
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      run: |
+        pct=$(node -e "console.log(require('./coverage/coverage-summary.json').total.statements.pct)")
+        echo "COVERAGE_PCT=$pct" >> $GITHUB_ENV
+
+    - name: Update README with coverage
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      run: |
+        tmp=$(mktemp)
+        awk -v repl="Coverage: ${COVERAGE_PCT}%" '
+          BEGIN{inblk=0}
+          /<!-- COVERAGE:START -->/{print; inblk=1; print "Coverage: " ENVIRON["COVERAGE_PCT"] "%"; next}
+          /<!-- COVERAGE:END -->/{inblk=0}
+          !inblk{print}
+        ' README.md > "$tmp"
+        mv "$tmp" README.md
+
+    - name: Commit README update
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "docs(readme): update coverage badge/number"
+        file_pattern: README.md
+
     #- name: Publish Test Results
     #  uses: dorny/test-reporter@v1
       # Run even if tests fail, but skip for forked PRs (cannot create checks there)
