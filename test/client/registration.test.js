@@ -54,12 +54,16 @@ const {
 
 describe('Client Registration', () => {
   test('should resolve registration successfully', async () => {
-    await expect(registerToServer('test-ep', 'localhost', 5683)).resolves.toBeUndefined();
+    await expect(
+      registerToServer('test-ep', 'localhost', 5683)
+    ).resolves.toBeUndefined();
   });
 
   test('updateRegistration should resolve when registered', async () => {
     await registerToServer('test-ep', 'localhost', 5683);
-    await expect(updateRegistration('localhost', 5683)).resolves.toBeUndefined();
+    await expect(
+      updateRegistration('localhost', 5683)
+    ).resolves.toBeUndefined();
   });
 
   test('deregister should resolve when registered', async () => {
@@ -69,12 +73,13 @@ describe('Client Registration', () => {
 
   test('updateRegistration should reject if not registered', async () => {
     _resetRegistration();
-    await expect(updateRegistration('localhost', 5683)).rejects.toBe('Not registered.');
+    await expect(updateRegistration('localhost', 5683)).rejects.toBe(
+      'Not registered.'
+    );
   });
 
   test('deregister should reject if not registered', async () => {
     _resetRegistration();
     await expect(deregister('localhost', 5683)).rejects.toBe('Not registered.');
   });
-
 });

@@ -1,8 +1,7 @@
 // client/objects/location.js
 var location = {
   id: 6,
-  instances:
-  [
+  instances: [
     {
       resources: {
         0: {
@@ -12,7 +11,7 @@ var location = {
           units: '°',
           readable: true,
           writable: false,
-          observable: true
+          observable: true,
         },
         1: {
           name: 'Longitude',
@@ -21,7 +20,7 @@ var location = {
           units: '°',
           readable: true,
           writable: false,
-          observable: true
+          observable: true,
         },
         2: {
           name: 'Altitude',
@@ -30,7 +29,7 @@ var location = {
           units: 'm',
           readable: true,
           writable: false,
-          observable: true
+          observable: true,
         },
         7: {
           name: 'Timestamp',
@@ -38,15 +37,15 @@ var location = {
           type: 'time',
           readable: true,
           writable: false,
-          observable: true
-        }
-      }
-    }
-  ]
+          observable: true,
+        },
+      },
+    },
+  ],
 };
 
 setInterval(() => {
   location.instances[0].resources[7].value = Math.floor(Date.now() / 1000);
-},1000);
+}, 1000);
 
 module.exports = location;

@@ -13,93 +13,114 @@ const sharedEmitter = require('./sharedEmitter');
  * @param {Object} [options={}] - Additional options: format (content-format), observe, confirmable, timeout.
  * @returns {Promise<Object>} Resolves with response { code, payload, emitter }.
  */
-function sendDTLSCoapRequest(client, method, path, payload = null, query = '', options = {}) {
-  
+function sendDTLSCoapRequest(
+  client,
+  method,
+  path,
+  payload = null,
+  query = '',
+  options = {}
+) {
   console.log(`send request ${method} ${path}`);
   return new Promise((resolve, reject) => {
     if (!client || !client.address) {
       return reject(new Error('Invalid client: address is required'));
     }
 
-    let token = null
+    let token = null;
 
     // Map method to CoAP code
-    const methodMap = { GET: '0.01', POST: '0.02', PUT: '0.03', DELETE: '0.04' };
+    const methodMap = {
+      GET: '0.01',
+      POST: '0.02',
+      PUT: '0.03',
+      DELETE: '0.04',
+    };
     const code = methodMap[method.toUpperCase()] || '0.01';
 
     // Build CoAP options
-    const coapOptions = [
-      { name: 'Uri-Path', value: Buffer.from(path) }
-    ];
+    const coapOptions = [{ name: 'Uri-Path', value: Buffer.from(path) }];
     if (query) {
       coapOptions.push({ name: 'Uri-Query', value: Buffer.from(query) });
     }
     if (options.format) {
-      coapOptions.push({ name: 'Content-Format', value: Buffer.from(options.format.toString()) });
+      coapOptions.push({
+        name: 'Content-Format',
+        value: Buffer.from(options.format.toString()),
+      });
     }
-    
+
     if (options.observe !== undefined) {
-      coapOptions.push({ name: 'Observe', value: Buffer.from([options.observe]) });
+      coapOptions.push({
+        name: 'Observe',
+        value: Buffer.from([options.observe]),
+      });
       token = crypto.randomBytes(8);
     }
 
     const coapReq = coapPacket.generate({
       confirmable: options?.confirmable !== false,
       messageId: Math.floor(Math.random() * 65535),
-      token: token ? Buffer.from(token,'hex') : Buffer.alloc(0),
+      token: token ? Buffer.from(token, 'hex') : Buffer.alloc(0),
       code,
       options: coapOptions,
-      payload: payload ? Buffer.from(payload) : Buffer.alloc(0)
+      payload: payload ? Buffer.from(payload) : Buffer.alloc(0),
     });
 
     let socket = null;
-    if(client?.socket && !client.socket.isClosed){
+    if (client?.socket && !client.socket.isClosed) {
       socket = client.socket;
-      
-      try{
+
+      try {
         socket.send(coapReq);
-
-      }catch(error){
-        console.log(error)
-        reject(error)
+      } catch (error) {
+        console.log(error);
+        reject(error);
       }
-    }else{
-
+    } else {
       socket = dtls.createSocket({
-        type: "udp4",
+        type: 'udp4',
         address: client.address,
         port: Number(client.port),
-        psk: { "Client_identity": "secret" } // should be replaced with actual PSK, use client
+        psk: { Client_identity: 'secret' }, // should be replaced with actual PSK, use client
       });
 
-      socket.on("connected", () => {
+      socket.on('connected', () => {
         clearTimeout(timeout);
-        try{
+        try {
           socket.send(coapReq);
-        }catch(err){
+        } catch (err) {
           return reject(err);
         }
       });
-
     }
 
     // increase time for authentication
-    let timeout = setTimeout(() => {
+    const timeout = setTimeout(() => {
       const error = new Error('CoAP DTLS request timed out');
       sharedEmitter.emit('error', error);
       try {
         socket.close();
-      } catch(err) {}
+      } catch (err) {}
       reject(error);
     }, options.timeout || 5000);
 
-    socket.on("message", (msg) => {
+    socket.on('message', (msg) => {
       clearTimeout(timeout);
       try {
         const parsed = coapPacket.parse(msg);
-        if (options.observe == 0)
-          console.log("token received on observation request:",parsed?.token.toString('hex'));
-        resolve({ code: parsed.code, token:parsed?.token.toString('hex'), payload: parsed.payload.toString(), socket });
+        if (options.observe == 0) {
+          console.log(
+            'token received on observation request:',
+            parsed?.token.toString('hex')
+          );
+        }
+        resolve({
+          code: parsed.code,
+          token: parsed?.token.toString('hex'),
+          payload: parsed.payload.toString(),
+          socket,
+        });
       } catch (err) {
         reject(new Error(`Failed to parse CoAP response: ${err.message}`));
       }
@@ -110,21 +131,23 @@ function sendDTLSCoapRequest(client, method, path, payload = null, query = '', o
       */
     });
 
-    socket.on("error", (err) => {
+    socket.on('error', (err) => {
       clearTimeout(timeout);
-      sharedEmitter.emit('error', `Error connecting to client: ${client.location}`);
+      sharedEmitter.emit(
+        'error',
+        `Error connecting to client: ${client.location}`
+      );
       reject(new Error(`Error connecting to client: ${client.location}`));
       try {
         socket.close();
-      }catch(err){}
+      } catch (err) {}
     });
 
-    socket.on("close", () => {
-      console.log("socket closed");
+    socket.on('close', () => {
+      console.log('socket closed');
       clearTimeout(timeout);
     });
   });
-
 }
 
 module.exports = {

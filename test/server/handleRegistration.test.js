@@ -13,13 +13,13 @@ describe('LwM2M Registration Handlers', () => {
   beforeEach(() => {
     mockReq = {
       url: '/rd?ep=testClient&lt=60&b=U',
-      rsinfo: { address: '127.0.0.1', port: 56830 }
+      rsinfo: { address: '127.0.0.1', port: 56830 },
     };
 
     mockRes = {
       code: '',
       end: jest.fn(),
-      setOption: jest.fn()
+      setOption: jest.fn(),
     };
 
     jest.clearAllMocks();
@@ -33,7 +33,10 @@ describe('LwM2M Registration Handlers', () => {
 
       expect(result).toHaveProperty('ep', 'testClient');
       expect(mockRes.code).toBe('2.01');
-      expect(mockRes.setOption).toHaveBeenCalledWith('Location-Path', expect.any(Array));
+      expect(mockRes.setOption).toHaveBeenCalledWith(
+        'Location-Path',
+        expect.any(Array)
+      );
       expect(mockRes.end).toHaveBeenCalled();
       expect(clientRegistry.registerClient).toHaveBeenCalledWith(
         'testClient',
@@ -42,7 +45,7 @@ describe('LwM2M Registration Handlers', () => {
           protocol: 'udp',
           location: expect.any(String),
           lifetime: 60,
-          binding: 'U'
+          binding: 'U',
         })
       );
     });
@@ -50,7 +53,9 @@ describe('LwM2M Registration Handlers', () => {
     test('should fail if ep is missing', async () => {
       mockReq.url = '/rd?lt=60';
 
-      await expect(handleRegister(mockReq, mockRes, 'udp')).rejects.toThrow('Missing ep');
+      await expect(handleRegister(mockReq, mockRes, 'udp')).rejects.toThrow(
+        'Missing ep'
+      );
       expect(mockRes.code).toBe('4.00');
       expect(mockRes.end).toHaveBeenCalledWith('Missing ep');
     });
@@ -72,7 +77,9 @@ describe('LwM2M Registration Handlers', () => {
       clientRegistry.updateClient.mockReturnValue(undefined);
       const mockPath = '/rd/99999';
 
-      await expect(handleUpdate(mockReq, mockRes, mockPath)).rejects.toThrow('Client not found');
+      await expect(handleUpdate(mockReq, mockRes, mockPath)).rejects.toThrow(
+        'Client not found'
+      );
       expect(mockRes.code).toBe('4.04');
       expect(mockRes.end).toHaveBeenCalledWith('Client not found');
     });
@@ -94,7 +101,9 @@ describe('LwM2M Registration Handlers', () => {
       clientRegistry.deregisterClientByLocation.mockReturnValue(undefined);
       const mockPath = '/rd/54321';
 
-      await expect(handleDeregister(mockReq, mockRes, mockPath)).rejects.toThrow('Client not found');
+      await expect(
+        handleDeregister(mockReq, mockRes, mockPath)
+      ).rejects.toThrow('Client not found');
       expect(mockRes.code).toBe('4.04');
       expect(mockRes.end).toHaveBeenCalledWith('Client not found');
     });

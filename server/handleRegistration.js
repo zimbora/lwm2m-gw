@@ -1,8 +1,12 @@
-const { registerClient, updateClient, deregisterClientByLocation } = require('./clientRegistry');
+const {
+  registerClient,
+  updateClient,
+  deregisterClientByLocation,
+} = require('./clientRegistry');
 const url = require('url');
 
 function handleRegister(req, res, protocol, validRegistration) {
-  return new Promise( async (resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
       const query = new URLSearchParams(req.url.split('?')[1]);
       console.debug(query);
@@ -60,7 +64,7 @@ function handleUpdate(req, res, path) {
       const location = `/rd/${path.split('/').pop()}`;
 
       const ep = updateClient(location, {
-        address: req.rsinfo.address, 
+        address: req.rsinfo.address,
         //port: req.rsinfo.port, // !! this port is the port used just for this message
         lastUpdate: Date.now(),
       });

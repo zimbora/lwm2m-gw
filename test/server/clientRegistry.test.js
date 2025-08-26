@@ -3,7 +3,7 @@ const {
   getClient,
   updateClient,
   deregisterClientByLocation,
-  listClients
+  listClients,
 } = require('../../server/clientRegistry');
 
 describe('Client Registry', () => {
@@ -13,7 +13,7 @@ describe('Client Registry', () => {
     port: 5683,
     location: '/rd/001',
     lifetime: 60,
-    binding: 'U'
+    binding: 'U',
   };
 
   beforeEach(() => {

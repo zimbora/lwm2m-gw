@@ -20,7 +20,6 @@ const serverHost = 'localhost';
 const serverPort = 5683;
 const localPort = 56830;
 
-
 /**
  * Bootstrap-enabled client flow:
  * 1. Start resource server
@@ -36,7 +35,12 @@ const localPort = 56830;
 
     // Step 2: Perform bootstrap sequence
     $.logger.info('[Bootstrap Client] Starting bootstrap sequence...');
-    await performBootstrap(endpointName, bootstrapHost, bootstrapPort, localPort);
+    await performBootstrap(
+      endpointName,
+      bootstrapHost,
+      bootstrapPort,
+      localPort
+    );
     $.client.bootstrapped = true;
     $.logger.info('[Bootstrap Client] Bootstrap completed successfully');
 
@@ -48,9 +52,10 @@ const localPort = 56830;
 
     // Step 4: Start monitoring connection
     monitorServerConnection();
-
   } catch (error) {
-    $.logger.error(`[Bootstrap Client] Initialization failed: ${error.message}`);
+    $.logger.error(
+      `[Bootstrap Client] Initialization failed: ${error.message}`
+    );
     process.exit(1);
   }
 })();
@@ -60,7 +65,7 @@ const localPort = 56830;
  */
 function monitorServerConnection() {
   const RETRY_INTERVAL = 30000; // Every 30 seconds
-  
+
   setInterval(async () => {
     if (!$.client.registered) {
       try {
@@ -69,8 +74,10 @@ function monitorServerConnection() {
         $.client.registered = true;
         $.logger.info('[Bootstrap Client] Re-registration successful');
       } catch (regErr) {
-        $.logger.error(`[Bootstrap Client] Re-registration failed: ${regErr.message}`);
-        
+        $.logger.error(
+          `[Bootstrap Client] Re-registration failed: ${regErr.message}`
+        );
+
         // If registration fails, try bootstrap again
         if (!$.client.bootstrapped) {
           try {
@@ -79,7 +86,9 @@ function monitorServerConnection() {
             $.client.bootstrapped = true;
             $.logger.info('[Bootstrap Client] Re-bootstrap successful');
           } catch (bootstrapErr) {
-            $.logger.error(`[Bootstrap Client] Re-bootstrap failed: ${bootstrapErr.message}`);
+            $.logger.error(
+              `[Bootstrap Client] Re-bootstrap failed: ${bootstrapErr.message}`
+            );
           }
         }
       }
@@ -98,4 +107,6 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 $.logger.info('[Bootstrap Client] Bootstrap-enabled client is running');
-$.logger.info('[Bootstrap Client] Will bootstrap from server and then register to main LwM2M server');
+$.logger.info(
+  '[Bootstrap Client] Will bootstrap from server and then register to main LwM2M server'
+);

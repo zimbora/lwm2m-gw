@@ -8,8 +8,8 @@ jest.mock('../../utils/cbor', () => ({
 }));
 
 jest.mock('../../utils/tlv', () => ({
-  encodeTLV: jest.fn(() => Buffer.from([0xC1])),
-  encodeInstance: jest.fn(() => Buffer.from([0xC2])),
+  encodeTLV: jest.fn(() => Buffer.from([0xc1])),
+  encodeInstance: jest.fn(() => Buffer.from([0xc2])),
   decodeTLV: jest.fn(() => ({ resourceId: 1, value: 42 })),
 }));
 
@@ -32,12 +32,18 @@ describe('PayloadCodec', () => {
     });
 
     it('encodes CBOR format', () => {
-      const result = PayloadCodec.encode({ key: 'value' }, CONTENT_FORMATS.cbor);
+      const result = PayloadCodec.encode(
+        { key: 'value' },
+        CONTENT_FORMATS.cbor
+      );
       expect(Buffer.isBuffer(result)).toBe(true);
     });
 
     it('encodes TLV single resource', () => {
-      const result = PayloadCodec.encode({ resourceId: 1, value: 42 }, CONTENT_FORMATS.tlv);
+      const result = PayloadCodec.encode(
+        { resourceId: 1, value: 42 },
+        CONTENT_FORMATS.tlv
+      );
       expect(Buffer.isBuffer(result)).toBe(true);
     });
 
@@ -46,8 +52,8 @@ describe('PayloadCodec', () => {
         instanceId: 0,
         resources: {
           0: { type: 'string', value: 'Test Manufacturer', readable: true },
-          1: { type: 'integer', value: 123, readable: true }
-        }
+          1: { type: 'integer', value: 123, readable: true },
+        },
       };
       const result = PayloadCodec.encode(payload, CONTENT_FORMATS.tlv);
       expect(Buffer.isBuffer(result)).toBe(true);
@@ -100,7 +106,10 @@ describe('PayloadCodec', () => {
 
     it('parses Core Link Format', () => {
       const input = '</3/0>;rt="oma.lwm2m",</1/0>;if="sensor"';
-      const parsed = PayloadCodec.decode(Buffer.from(input), CONTENT_FORMATS.link);
+      const parsed = PayloadCodec.decode(
+        Buffer.from(input),
+        CONTENT_FORMATS.link
+      );
       expect(parsed).toEqual([
         { path: '/3/0', attributes: { rt: 'oma.lwm2m' } },
         { path: '/1/0', attributes: { if: 'sensor' } },

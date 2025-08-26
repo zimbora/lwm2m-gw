@@ -3,12 +3,15 @@ global.$ = {};
 $.logger = require('../../client/logger.js');
 
 const coap = require('coap');
-const { startResourceServer, getResource, stopObservation } = require('../../client/resourceServer');
+const {
+  startResourceServer,
+  getResource,
+  stopObservation,
+} = require('../../client/resourceServer');
 
 const PORT = 56831;
 
 describe('Resource Server', () => {
-
   let server;
   beforeAll(() => {
     server = startResourceServer(PORT);
@@ -18,7 +21,9 @@ describe('Resource Server', () => {
     server.close(() => {
       done();
       const sockets = require('coap/lib/server')._sock;
-      if (sockets && sockets._handle) sockets._handle.close();
+      if (sockets && sockets._handle) {
+        sockets._handle.close();
+      }
     });
   });
 
@@ -72,7 +77,9 @@ describe('Resource Server', () => {
 
     req.on('response', (res) => {
       expect(res.code).toBe('2.05');
-      expect(res.headers['Content-Format']).toBe('application/vnd.oma.lwm2m+tlv');
+      expect(res.headers['Content-Format']).toBe(
+        'application/vnd.oma.lwm2m+tlv'
+      );
       expect(res.payload).toBeInstanceOf(Buffer);
       done();
     });
@@ -123,11 +130,11 @@ describe('Resource Server', () => {
       method: 'GET',
       pathname: '/4/0/1',
       confirmable: true,
-      observe: 1
+      observe: 1,
     });
 
     req.on('response', (res) => {
-      console.log(res.code)
+      console.log(res.code);
       expect(res.code).toBe('4.05');
       done();
     });
@@ -142,7 +149,7 @@ describe('Resource Server', () => {
       method: 'GET',
       pathname: '/4/0/4',
       confirmable: true,
-      observe: 0
+      observe: 0,
     });
 
     req.on('response', (res) => {
@@ -174,20 +181,18 @@ describe('Resource Server', () => {
 
     req.end();
   });
-
 });
-
 
 describe('Resource Server Error Handling', () => {
   let server;
   const port = 56840;
 
-  beforeAll(done => {
+  beforeAll((done) => {
     server = startResourceServer(port);
     done();
   });
 
-  afterAll(done => {
+  afterAll((done) => {
     server.close(done);
   });
 
@@ -207,7 +212,6 @@ describe('Resource Server Error Handling', () => {
 
     req.end();
   });
-
 });
 
 /*

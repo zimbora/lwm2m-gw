@@ -28,9 +28,9 @@ function deregisterClientByLocation(locationPath) {
   return null;
 }
 
-function associateSocketToClient(ep, socket){
-  let client = getClient(ep);
-  clients.set(ep,{ ...client, socket });
+function associateSocketToClient(ep, socket) {
+  const client = getClient(ep);
+  clients.set(ep, { ...client, socket });
 }
 
 function listClients() {

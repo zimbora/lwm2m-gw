@@ -18,8 +18,8 @@ setBootstrapConfiguration('node-client-bootstrap-001', {
       serverUri: 'coap://localhost:5683',
       isBootstrap: false,
       securityMode: 3, // NoSec
-      shortServerId: 123
-    }
+      shortServerId: 123,
+    },
   ],
   serverInstances: [
     {
@@ -27,23 +27,23 @@ setBootstrapConfiguration('node-client-bootstrap-001', {
       shortServerId: 123,
       lifetime: 600, // 10 minutes
       binding: 'U',
-      notificationStoring: true
-    }
-  ]
+      notificationStoring: true,
+    },
+  ],
 });
 
-async function bootstrapDeviceCallback({query, ep}){
+async function bootstrapDeviceCallback({ query, ep }) {
   console.log(`[Bootstrap Server] Get bootstrap config for ep: ${ep}`);
   // using this callback to get info from a 3rd party
-  let config = {
+  const config = {
     securityInstances: [
       {
         instanceId: 0,
         serverUri: 'coap://localhost:5683',
         isBootstrap: false,
         securityMode: 3, // NoSec
-        shortServerId: 123
-      }
+        shortServerId: 123,
+      },
     ],
     serverInstances: [
       {
@@ -51,21 +51,21 @@ async function bootstrapDeviceCallback({query, ep}){
         shortServerId: 123,
         lifetime: 600, // 10 minutes
         binding: 'U',
-        notificationStoring: true
-      }
-    ]
-  }
+        notificationStoring: true,
+      },
+    ],
+  };
   return config;
 }
 
 // Start the bootstrap server
 const server = startBootstrapServer(bootstrapDeviceCallback);
 
-sharedEmitter.on('bootstrap-request', ({protocol, ep}) => {
+sharedEmitter.on('bootstrap-request', ({ protocol, ep }) => {
   console.log(`[Bootstrap Server] Bootstrap request from: ${ep}`);
 });
 
-sharedEmitter.on('error',  ({protocol, ep}) => {  
+sharedEmitter.on('error', ({ protocol, ep }) => {
   console.log(`[Bootstrap Server] Bootstrap finished for: ${ep}`);
 });
 
@@ -86,5 +86,9 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('[Bootstrap] Unhandled Promise Rejection:', reason);
 });
 
-console.log('[Bootstrap] Server is ready. Clients can send bootstrap requests to /bs');
-console.log('[Bootstrap] Use client with bootstrap enabled to test the functionality');
+console.log(
+  '[Bootstrap] Server is ready. Clients can send bootstrap requests to /bs'
+);
+console.log(
+  '[Bootstrap] Use client with bootstrap enabled to test the functionality'
+);

@@ -1,7 +1,7 @@
 // server/mqttRequestHandler.js
 
 const mqtt = require('mqtt');
-const { 
+const {
   discoveryRequest,
   getRequest,
   startObserveRequest,
@@ -14,16 +14,16 @@ const {
 
 /**
  * MQTT Request Handler for LwM2M Server
- * 
+ *
  * This module handles incoming MQTT requests and forwards them to LwM2M devices.
- * 
+ *
  * Topic Structure:
  * - Incoming requests: {project}/requests/{endpoint}/{method}{path}
  * - Outgoing responses: {project}/responses/{endpoint}/{method}{path}
- * 
+ *
  * Supported Methods:
  * - GET: Read resource values
- * - PUT: Write resource values  
+ * - PUT: Write resource values
  * - POST: Execute resources
  * - DELETE: Delete object instances
  * - DISCOVER: Discover available resources
@@ -32,12 +32,13 @@ const {
  */
 
 class MqttRequestHandler {
-  constructor(client, config) { // mqtt client
+  constructor(client, config) {
+    // mqtt client
     this.client = client;
     this.config = {
       enabled: config.enabled !== false,
       project: config.project || 'lwm2m',
-      ...config
+      ...config,
     };
   }
 
@@ -52,7 +53,11 @@ class MqttRequestHandler {
 
       // Parse topic: {project}/requests/{endpoint}/{method_and_path}
       const topicParts = topic.split('/');
-      if (topicParts.length < 4 || topicParts[0] !== this.config.project || topicParts[1] !== 'requests') {
+      if (
+        topicParts.length < 4 ||
+        topicParts[0] !== this.config.project ||
+        topicParts[1] !== 'requests'
+      ) {
         console.warn(`[MQTT Request Handler] Invalid topic format: ${topic}`);
         return;
       }
@@ -61,19 +66,29 @@ class MqttRequestHandler {
       const methodAndPath = topicParts.slice(3).join('/');
 
       // Parse method and path from the combined string
-      const { method, path, payload, options } = this.parseRequest(methodAndPath, message);
+      const { method, path, payload, options } = this.parseRequest(
+        methodAndPath,
+        message
+      );
 
-      console.log(`[MQTT Request Handler] Parsed request - EP: ${endpoint}, Method: ${method}, Path: ${path}`);
+      console.log(
+        `[MQTT Request Handler] Parsed request - EP: ${endpoint}, Method: ${method}, Path: ${path}`
+      );
 
       // Route to appropriate LwM2M function
-      const response = await this.routeRequest(endpoint, method, path, payload, options);
-      
+      const response = await this.routeRequest(
+        endpoint,
+        method,
+        path,
+        payload,
+        options
+      );
+
       // Publish response back to MQTT
       await this.publishResponse(endpoint, method, path, response);
-
     } catch (error) {
       console.error('[MQTT Request Handler] Error handling request:', error);
-      
+
       // Try to extract endpoint info for error response
       try {
         const topicParts = topic.split('/');
@@ -81,14 +96,17 @@ class MqttRequestHandler {
           const endpoint = topicParts[2];
           const methodAndPath = topicParts.slice(3).join('/');
           const { method, path } = this.parseRequest(methodAndPath, '{}');
-          
+
           await this.publishResponse(endpoint, method, path, {
             error: error.message,
-            timestamp: Date.now()
+            timestamp: Date.now(),
           });
         }
       } catch (responseError) {
-        console.error('[MQTT Request Handler] Failed to send error response:', responseError);
+        console.error(
+          '[MQTT Request Handler] Failed to send error response:',
+          responseError
+        );
       }
     }
   }
@@ -125,32 +143,32 @@ class MqttRequestHandler {
   async routeRequest(endpoint, method, path, payload, options) {
     // Extract format from options, default to 'text'
     const format = options.format || 'text';
-    
+
     switch (method.toUpperCase()) {
       case 'GET':
         return await getRequest(endpoint, path, format);
-        
+
       case 'PUT':
         if (payload === null || payload === undefined) {
           throw new Error('PUT request requires payload');
         }
         return await putRequest(endpoint, path, payload, format);
-        
+
       case 'POST':
         return await postRequest(endpoint, path, payload, format);
-        
+
       case 'DELETE':
         return await deleteRequest(endpoint, path);
-        
+
       case 'DISCOVER':
         return await discoveryRequest(endpoint);
-        
+
       case 'OBSERVE':
         return await startObserveRequest(endpoint, path, 0, format);
-        
+
       case 'CANCEL-OBSERVE':
         return await stopObserveRequest(endpoint, path, 1, format);
-        
+
       default:
         throw new Error(`Unsupported method: ${method}`);
     }
@@ -161,7 +179,9 @@ class MqttRequestHandler {
    */
   async publishResponse(endpoint, method, path, response) {
     if (!this.client) {
-      console.warn('[MQTT Request Handler] No MQTT client available for response');
+      console.warn(
+        '[MQTT Request Handler] No MQTT client available for response'
+      );
       return;
     }
 
@@ -171,17 +191,23 @@ class MqttRequestHandler {
       endpoint: endpoint,
       method: method,
       path: path,
-      data: response
+      data: response,
     };
 
     try {
-      this.client.publish(responseTopic, JSON.stringify(responsePayload), { qos: 1 });
-      console.log(`[MQTT Request Handler] Published response to ${responseTopic}`);
+      this.client.publish(responseTopic, JSON.stringify(responsePayload), {
+        qos: 1,
+      });
+      console.log(
+        `[MQTT Request Handler] Published response to ${responseTopic}`
+      );
     } catch (error) {
-      console.error('[MQTT Request Handler] Failed to publish response:', error);
+      console.error(
+        '[MQTT Request Handler] Failed to publish response:',
+        error
+      );
     }
   }
-
 }
 
 module.exports = MqttRequestHandler;

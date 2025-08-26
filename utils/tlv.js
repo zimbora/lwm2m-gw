@@ -39,9 +39,9 @@ function encodeTLV(resourceId, value, type = 'float') {
 
     case 'unsigned': {
       const uintVal = parseInt(value);
-      if (uintVal <= 0xFF) {
+      if (uintVal <= 0xff) {
         valueBuf = Buffer.from([uintVal]);
-      } else if (uintVal <= 0xFFFF) {
+      } else if (uintVal <= 0xffff) {
         valueBuf = Buffer.alloc(2);
         valueBuf.writeUInt16BE(uintVal);
       } else {
@@ -76,9 +76,10 @@ function encodeTLV(resourceId, value, type = 'float') {
   const length = valueBuf.length;
   let headerByte = 0b11000000;
 
-  const idBuf = resourceId < 256
-    ? Buffer.from([resourceId])
-    : Buffer.from([(resourceId >> 8) & 0xFF, resourceId & 0xFF]);
+  const idBuf =
+    resourceId < 256
+      ? Buffer.from([resourceId])
+      : Buffer.from([(resourceId >> 8) & 0xff, resourceId & 0xff]);
 
   if (resourceId > 255) {
     headerByte |= 0b00100000;
@@ -146,13 +147,18 @@ function decodeTLV(buffer, typeMap = {}) {
         length = buffer.readUInt16BE(offset);
         offset += 2;
       } else if (lengthType === 3) {
-        length = (buffer[offset] << 16) | (buffer[offset + 1] << 8) | buffer[offset + 2];
+        length =
+          (buffer[offset] << 16) |
+          (buffer[offset + 1] << 8) |
+          buffer[offset + 2];
         offset += 3;
       }
     }
 
     if (offset + length > buffer.length) {
-      throw new Error(`Declared TLV value length (${length}) exceeds buffer size`);
+      throw new Error(
+        `Declared TLV value length (${length}) exceeds buffer size`
+      );
     }
 
     const value = buffer.slice(offset, offset + length);
@@ -191,7 +197,7 @@ function decodeTLV(buffer, typeMap = {}) {
           // Fallback
           if (length === 4) {
             decodedValue = value.readFloatBE();
-          } else if (value.every(b => b >= 32 && b <= 126)) {
+          } else if (value.every((b) => b >= 32 && b <= 126)) {
             decodedValue = value.toString('utf8');
           } else if (length <= 6) {
             decodedValue = value.readUIntBE(0, length);
@@ -200,7 +206,9 @@ function decodeTLV(buffer, typeMap = {}) {
           }
       }
     } catch (err) {
-      throw new Error(`Failed to decode TLV value for resource ${id}: ${err.message}`);
+      throw new Error(
+        `Failed to decode TLV value for resource ${id}: ${err.message}`
+      );
     }
 
     resources[id] = decodedValue;

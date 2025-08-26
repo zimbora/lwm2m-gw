@@ -9,31 +9,43 @@ const temperature = require('./temperature');
 
 function getObjectModule(objectId) {
   switch (parseInt(objectId)) {
-    case 0: return security;
-    case 1: return serverObj;
-    case 2: return accessControl;
-    case 3: return device;
-    case 4: return connectivity;
-    case 5: return firmware;
-    case 6: return location;
-    case 3303: return temperature;
-    default: return null;
+    case 0:
+      return security;
+    case 1:
+      return serverObj;
+    case 2:
+      return accessControl;
+    case 3:
+      return device;
+    case 4:
+      return connectivity;
+    case 5:
+      return firmware;
+    case 6:
+      return location;
+    case 3303:
+      return temperature;
+    default:
+      return null;
   }
 }
 
 function getResource(objectId, instanceId, resourceId) {
   const mod = getObjectModule(objectId);
 
-  if(objectId == null)
+  if (objectId == null) {
     return null;
+  }
 
-  if(instanceId == null)
+  if (instanceId == null) {
     instanceId = 0;
+  }
 
-  if(resourceId == null)
+  if (resourceId == null) {
     return getResourceSet(objectId, instanceId);
-  else
+  } else {
     return mod?.instances?.[instanceId]?.resources[resourceId] || null;
+  }
 }
 
 function getResourceSet(objectId, instanceId) {
@@ -49,7 +61,9 @@ function addInstance(objectId, instanceId) {
 
   // If instanceId not provided, generate next available
   if (instanceId == null) {
-    const existingIds = Object.keys(mod.instances || {}).map(id => parseInt(id));
+    const existingIds = Object.keys(mod.instances || {}).map((id) =>
+      parseInt(id)
+    );
     instanceId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 0;
   } else {
     instanceId = parseInt(instanceId);
@@ -61,7 +75,9 @@ function addInstance(objectId, instanceId) {
   }
 
   if (mod.instances[instanceId]) {
-    throw new Error(`Instance ${instanceId} already exists for object ${objectId}`);
+    throw new Error(
+      `Instance ${instanceId} already exists for object ${objectId}`
+    );
   }
 
   // Check for instance 0
@@ -75,22 +91,22 @@ function addInstance(objectId, instanceId) {
     resources = Object.fromEntries(
       Object.entries(defaultInstance.resources).map(([key, resource]) => [
         key,
-        { ...resource, value: null }
+        { ...resource, value: null },
       ])
     );
   }
 
   // Create the new instance with the copied resources
   mod.instances[instanceId] = {
-    resources
+    resources,
   };
 
   return instanceId;
 }
 
 module.exports = {
-	getObjectModule,
+  getObjectModule,
   getResource,
   getResourceSet,
-  addInstance
+  addInstance,
 };

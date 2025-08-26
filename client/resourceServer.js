@@ -16,21 +16,17 @@ const {
 } = require('./transport/mqttServer');
 */
 
-const {
-  getResource,
-  getResourceSet
-} = require('./objects');
+const { getResource, getResourceSet } = require('./objects');
 
-const { 
+const {
   handleDiscoveryRequest,
-  handleGetRequest, 
-  handlePutRequest, 
+  handleGetRequest,
+  handlePutRequest,
   handlePostRequest,
   handleDeleteRequest,
   handleCreateRequest,
-  handleProvisionCompleted
+  handleProvisionCompleted,
 } = require('./routes');
-
 
 function startResourceServer(port = 56830) {
   const observers = getObservers();
@@ -47,11 +43,11 @@ function startResourceServer(port = 56830) {
     const [objectId, instanceId, resourceId] = segments.map(Number);
 
     // Bootstrap methods
-    if(req.method === 'POST' && req.url === '/bs') {
-      return handleProvisionCompleted(req,res);
-    }else if (req.method === 'POST' && segments.length === 1) {
+    if (req.method === 'POST' && req.url === '/bs') {
+      return handleProvisionCompleted(req, res);
+    } else if (req.method === 'POST' && segments.length === 1) {
       return handleCreateRequest(req, res, { objectId });
-    }else if (req.method === 'POST' && segments.length === 2) {
+    } else if (req.method === 'POST' && segments.length === 2) {
       return handleCreateRequest(req, res, { objectId, instanceId });
     }
 
@@ -63,13 +59,37 @@ function startResourceServer(port = 56830) {
     }
 
     if (req.method === 'GET') {
-      return handleGetRequest(req, res, { objectId, instanceId, resourceId, resource, observers, path });
+      return handleGetRequest(req, res, {
+        objectId,
+        instanceId,
+        resourceId,
+        resource,
+        observers,
+        path,
+      });
     } else if (req.method === 'PUT') {
-      return handlePutRequest(req, res, { objectId, instanceId, resourceId, resource, observers, path });
+      return handlePutRequest(req, res, {
+        objectId,
+        instanceId,
+        resourceId,
+        resource,
+        observers,
+        path,
+      });
     } else if (req.method === 'POST') {
-      return handlePostRequest(req, res, { objectId, instanceId, resourceId, resource });
-    }else if (req.method === 'DELETE') {
-      return handleDeleteRequest(req, res, { objectId, instanceId, resourceId, resource });
+      return handlePostRequest(req, res, {
+        objectId,
+        instanceId,
+        resourceId,
+        resource,
+      });
+    } else if (req.method === 'DELETE') {
+      return handleDeleteRequest(req, res, {
+        objectId,
+        instanceId,
+        resourceId,
+        resource,
+      });
     } else {
       res.code = '4.05';
       res.end('method not implemented');

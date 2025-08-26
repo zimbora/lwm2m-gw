@@ -38,7 +38,11 @@ class PayloadCodec {
           payload.resourceId != null &&
           payload.value !== undefined
         ) {
-          return encodeTLV(payload.resourceId, payload.value, payload.type || 'float');
+          return encodeTLV(
+            payload.resourceId,
+            payload.value,
+            payload.type || 'float'
+          );
         } else if (
           typeof payload === 'object' &&
           payload.instanceId != null &&
@@ -48,7 +52,7 @@ class PayloadCodec {
         } else {
           throw new Error('Invalid TLV payload format');
         }
-        
+
       default:
         throw new Error(`Unsupported content format: ${format}`);
     }
@@ -102,14 +106,19 @@ class PayloadCodec {
 
     for (const entry of entries) {
       const match = entry.match(/^<([^>]+)>(.*)$/);
-      if (!match) continue;
+      if (!match) {
+        continue;
+      }
 
       const path = match[1];
       const attrString = match[2];
       const attributes = {};
 
       // Parse each ;key[=value] pair
-      const parts = attrString.split(';').map((s) => s.trim()).filter(Boolean);
+      const parts = attrString
+        .split(';')
+        .map((s) => s.trim())
+        .filter(Boolean);
       for (const part of parts) {
         const [key, val] = part.split('=');
         if (val === undefined) {

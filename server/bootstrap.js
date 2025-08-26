@@ -1,21 +1,27 @@
 // server/bootstrap.js
 const coap = require('coap');
-const { handleBootstrapRequest, handleBootstrapFinish } = require('./handleBootstrap');
+const {
+  handleBootstrapRequest,
+  handleBootstrapFinish,
+} = require('./handleBootstrap');
 const sharedEmitter = require('./transport/sharedEmitter');
 
 const BOOTSTRAP_PORT = 5783; // Standard LwM2M Bootstrap port
 
 /**
  * LwM2M Bootstrap Server
- * 
+ *
  * Features:
  * - Provisioning Credentials: Supplies initial security credentials
- * - Device Configuration: Provides configuration parameters  
+ * - Device Configuration: Provides configuration parameters
  * - Initial Registration: Facilitates initial registration process
  * - Security Management: Manages security object provisioning
  */
 
-function startBootstrapServer(bootstrapDeviceCall = null, port = BOOTSTRAP_PORT) {
+function startBootstrapServer(
+  bootstrapDeviceCall = null,
+  port = BOOTSTRAP_PORT
+) {
   const server = coap.createServer((req, res) => {
     const path = req?.url.split('?')[0];
     const method = req?.method;
@@ -29,9 +35,10 @@ function startBootstrapServer(bootstrapDeviceCall = null, port = BOOTSTRAP_PORT)
           sharedEmitter.emit('bootstrap-request', { protocol: 'coap', ep });
         })
         .catch((err) => {
-          console.error(`[Bootstrap Server] Bootstrap request error: ${err.message}`);
+          console.error(
+            `[Bootstrap Server] Bootstrap request error: ${err.message}`
+          );
         });
-
     } else if (method === 'POST' && path === '/bs-finish') {
       // Handle bootstrap finish
       handleBootstrapFinish(req, res)
@@ -39,9 +46,10 @@ function startBootstrapServer(bootstrapDeviceCall = null, port = BOOTSTRAP_PORT)
           sharedEmitter.emit('bootstrap-finish', { protocol: 'coap', ep });
         })
         .catch((err) => {
-          console.error(`[Bootstrap Server] Bootstrap finish error: ${err.message}`);
+          console.error(
+            `[Bootstrap Server] Bootstrap finish error: ${err.message}`
+          );
         });
-
     } else {
       // Unsupported path/method
       res.code = '4.04';
@@ -58,14 +66,18 @@ function startBootstrapServer(bootstrapDeviceCall = null, port = BOOTSTRAP_PORT)
 
 // Listen for bootstrap events
 sharedEmitter.on('bootstrap-request', ({ protocol, ep }) => {
-  console.log(`[Bootstrap Event] Client ${ep} requested bootstrap via ${protocol}`);
+  console.log(
+    `[Bootstrap Event] Client ${ep} requested bootstrap via ${protocol}`
+  );
 });
 
 sharedEmitter.on('bootstrap-finish', ({ protocol, ep }) => {
-  console.log(`[Bootstrap Event] Client ${ep} finished bootstrap via ${protocol}`);
+  console.log(
+    `[Bootstrap Event] Client ${ep} finished bootstrap via ${protocol}`
+  );
 });
 
 module.exports = {
   startBootstrapServer,
-  BOOTSTRAP_PORT
+  BOOTSTRAP_PORT,
 };

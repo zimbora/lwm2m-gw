@@ -1,6 +1,5 @@
-const pino = require("pino");
+const pino = require('pino');
 
-module.exports = pino(
-  {
-    level: "debug",
-  })
+module.exports = pino({
+  level: 'debug',
+});
