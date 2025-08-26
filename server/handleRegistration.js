@@ -2,7 +2,7 @@ const { registerClient, updateClient, deregisterClientByLocation } = require('./
 const url = require('url');
 
 function handleRegister(req, res, protocol, validRegistration) {
-  return new Promise((resolve, reject) => {
+  return new Promise( async (resolve, reject) => {
     try {
       const query = new URLSearchParams(req.url.split('?')[1]);
       console.debug(query);
@@ -18,7 +18,10 @@ function handleRegister(req, res, protocol, validRegistration) {
       }
 
       if (typeof validRegistration === 'function') {
-        if (!validRegistration(ep)) {
+        const authorized = await validRegistration(ep);
+        if (!authorized) {
+          res.code = '5.00';
+          res.end('Registration error');
           return reject(new Error('Registration not authorized'));
         }
       }

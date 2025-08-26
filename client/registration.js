@@ -21,7 +21,7 @@ function registerToServer(endpointName, serverHost, serverPort, localPort = 5683
         if (err) return reject(err);
         if (res.code !== '2.01') {
           $.logger.error(`[Client] Registration failed: ${res.code}`);
-          $.logger.error(res);
+          $.logger.error(res.payload.toString());
           return reject(new Error(res.payload.toString()));
         }
         const location = res.options.find(opt => opt.name === 'Location-Path');
@@ -57,7 +57,7 @@ function registerToServer(endpointName, serverHost, serverPort, localPort = 5683
         clearTimeout(timeout); // cancel the scheduled timeout
         if (res.code !== '2.01') {
           $.logger.error(`[Client] Registration failed: ${res.code}`);
-          $.logger.error(res);
+          $.logger.error(res.payload.toString());
           return reject(new Error(res.payload.toString()));
         }
 
