@@ -1,7 +1,30 @@
 # Tests
 
+## Automated CI/CD
+
+### GitHub Actions Workflow
+
+The repository includes a comprehensive GitHub Actions workflow that automatically:
+- **Runs tests** on Node.js 18.x and 20.x
+- **Generates coverage reports** using Jest's built-in coverage
+- **Publishes test results** in JUnit XML format
+- **Uploads coverage** to Codecov (when configured)
+
+**Triggered on:**
+- Push to `main` branch
+- Pull requests targeting `main` branch
+
+**Commands used:**
+- `npm ci` - Clean install dependencies  
+- `npm run test:ci` - Run tests with coverage and JUnit reporting
+
+### Workflow Badge
+
+[![Tests](https://github.com/zimbora/lwm2m-node/actions/workflows/test.yml/badge.svg)](https://github.com/zimbora/lwm2m-node/actions/workflows/test.yml)
+
 ## Global
 >> npm test
+>> npm run test:ci  # CI version with coverage and JUnit reporting
 
 ## File
 >> npx jest test/client/resourceServer.test.js

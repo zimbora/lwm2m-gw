@@ -13,10 +13,16 @@
     "pino": "^9.7.0"
   },
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "test:ci": "jest --ci --coverage --reporters=default --reporters=jest-junit"
+  },
+  "jest-junit": {
+    "outputDirectory": "./",
+    "outputName": "junit.xml"
   },
   "devDependencies": {
     "jest": "^29.7.0",
+    "jest-junit": "^16.0.0",
     "pino-pretty": "^13.0.0"
   }
 }
