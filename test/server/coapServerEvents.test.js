@@ -1,17 +1,20 @@
 const coap = require('coap');
 const sharedEmitter = require('../../server/transport/sharedEmitter');
 const { startLwM2MCoapServer } = require('../../server/resourceClient');
-const { registerObservation, getObservation, deregisterObservation, cleanup } = require('../../server/observationRegistry');
-
+const {
+  registerObservation,
+  getObservation,
+  deregisterObservation,
+  cleanup,
+} = require('../../server/observationRegistry');
 
 describe('LwM2M CoAP Server - sharedEmitter events', () => {
-
   let server;
   let locationPath = null;
-  let testToken = Buffer.from('abcd', 'hex'); // fixed token for testing
+  const testToken = Buffer.from('abcd', 'hex'); // fixed token for testing
   const testEp = 'test-client';
   const testPath = '/3/0/1'; // example resource
-  
+
   beforeAll((done) => {
     server = startLwM2MCoapServer();
     setTimeout(done, 200); // Give server time to start
@@ -33,7 +36,7 @@ describe('LwM2M CoAP Server - sharedEmitter events', () => {
       method: 'POST',
       pathname: '/rd',
       confirmable: true,
-      query: 'ep=test-client&lt=60&lwm2m=1.0'
+      query: 'ep=test-client&lt=60&lwm2m=1.0',
     });
 
     sharedEmitter.once('registration', (event) => {
@@ -49,7 +52,9 @@ describe('LwM2M CoAP Server - sharedEmitter events', () => {
   });
 
   it('should emit "update" on registration update', (done) => {
-    if (!locationPath) return done.fail('No locationPath from registration');
+    if (!locationPath) {
+      return done.fail('No locationPath from registration');
+    }
 
     const req = coap.request({
       hostname: 'localhost',
@@ -57,7 +62,7 @@ describe('LwM2M CoAP Server - sharedEmitter events', () => {
       method: 'PUT',
       pathname: locationPath,
       confirmable: true,
-      query: 'lt=120'
+      query: 'lt=120',
     });
 
     sharedEmitter.once('update', (event) => {
@@ -72,14 +77,16 @@ describe('LwM2M CoAP Server - sharedEmitter events', () => {
   });
 
   it('should emit "deregistration" on registration delete', (done) => {
-    if (!locationPath) return done.fail('No locationPath from registration');
+    if (!locationPath) {
+      return done.fail('No locationPath from registration');
+    }
 
     const req = coap.request({
       hostname: 'localhost',
       port: 5683,
       method: 'DELETE',
       pathname: locationPath,
-      confirmable: true
+      confirmable: true,
     });
 
     sharedEmitter.once('deregistration', (event) => {
@@ -93,13 +100,8 @@ describe('LwM2M CoAP Server - sharedEmitter events', () => {
 
   it('should emit "observation" when observe request is received', (done) => {
     // Register a fake observation manually
-    registerObservation(
-      testToken,
-      testEp,
-      testPath,
-      format = 'text'
-    );
-    
+    registerObservation(testToken, testEp, testPath, (format = 'text'));
+
     const req = coap.request({
       hostname: 'localhost',
       port: 5683,
@@ -107,7 +109,7 @@ describe('LwM2M CoAP Server - sharedEmitter events', () => {
       pathname: testPath,
       confirmable: true,
       observe: 0,
-      token: testToken
+      token: testToken,
     });
 
     sharedEmitter.once('observation', (event) => {
@@ -122,11 +124,9 @@ describe('LwM2M CoAP Server - sharedEmitter events', () => {
 
     req.write('test-observe-payload');
     req.end();
-
   });
 
   it('should emit "error" when observe request is received and token is not registered', (done) => {
-    
     const req = coap.request({
       hostname: 'localhost',
       port: 5683,
@@ -134,7 +134,7 @@ describe('LwM2M CoAP Server - sharedEmitter events', () => {
       pathname: testPath,
       confirmable: true,
       observe: 0,
-      token: 'testWrongToken'
+      token: 'testWrongToken',
     });
 
     sharedEmitter.once('error', (event) => {
@@ -146,7 +146,5 @@ describe('LwM2M CoAP Server - sharedEmitter events', () => {
 
     req.write('test-observe-payload');
     req.end();
-
   });
-
 });

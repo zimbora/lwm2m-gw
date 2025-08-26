@@ -1,4 +1,3 @@
-
 # LwM2M Node.js Library
 
 [![Tests](https://github.com/zimbora/lwm2m-node/actions/workflows/test.yml/badge.svg)](https://github.com/zimbora/lwm2m-node/actions/workflows/test.yml)
@@ -22,7 +21,6 @@
 [![issues](https://img.shields.io/github/issues/zimbora/lwm2m-gw.svg)](https://github.com/zimbora/lwm2m-gw/issues)
 [![PRs](https://img.shields.io/github/issues-pr/zimbora/lwm2m-gw.svg)](https://github.com/zimbora/lwm2m-gw/pulls)
 
-
 A comprehensive **Lightweight Machine to Machine (LwM2M)** implementation in Node.js featuring both client and server components with support for CoAP, DTLS encryption, and full bootstrap capabilities.
 
 ## ⚡ Quick Demo
@@ -32,35 +30,44 @@ A comprehensive **Lightweight Machine to Machine (LwM2M)** implementation in Nod
 Experience the full LwM2M lifecycle from device provisioning to operation:
 
 #### 1. Launch Bootstrap Server
+
 ```bash
 node server/examples/bootstrapServer.js | npx pino-pretty
 ```
-*Handles device provisioning and security configuration on port 5684*
+
+_Handles device provisioning and security configuration on port 5684_
 
 #### 2. Launch Main LwM2M Server
+
 ```bash
 node server/examples/server.js | npx pino-pretty
 ```
-*Manages registered devices and resource operations on port 5683*
+
+_Manages registered devices and resource operations on port 5683_
 
 #### 3. Launch Bootstrap Client
+
 ```bash
 node client/examples/bootstrapClient.js | npx pino-pretty
 ```
-*Simulates a device going through the complete bootstrap process*
+
+_Simulates a device going through the complete bootstrap process_
 
 #### 4. Launch Standard Client
+
 ```bash
 node client/examples/client.js | npx pino-pretty
 ```
-*Simulates a pre-configured device connecting directly*
+
+_Simulates a pre-configured device connecting directly_
 
 ### 🔄 What Happens
 
 The bootstrap client automatically:
+
 1. **Connects** to bootstrap server (port 5684)
 2. **Receives** security and server configuration objects
-3. **Registers** to main LwM2M server (port 5683) 
+3. **Registers** to main LwM2M server (port 5683)
 4. **Begins** normal LwM2M operations (observations, resource access)
 
 ### 🔒 Secure Demo (DTLS)
@@ -80,7 +87,7 @@ node server/examples/dtlsServer.js
 ## 🌟 Key Features
 
 - **📱 Complete LwM2M Implementation**: Full client and server with all standard objects
-- **🔐 Security First**: DTLS encryption and comprehensive bootstrap provisioning  
+- **🔐 Security First**: DTLS encryption and comprehensive bootstrap provisioning
 - **🚀 Production Ready**: Event-driven architecture with monitoring and analytics
 - **🔧 Developer Friendly**: Extensive examples, tests, and documentation
 - **📊 Multiple Formats**: Support for JSON, CBOR, TLV, and text data formats
@@ -91,61 +98,60 @@ node server/examples/dtlsServer.js
 
 ## ✅ LwM2M Node.js Capabilities Overview
 
-| Feature                              | 🌐 Client                         | 🖥️ Server                           | ✅ Auto Tests   |
-|--------------------------------------|-----------------------------------|-------------------------------------|-----------------|
-| **Bootstrap Server**                 |                                   |                                     |                 |
-| Bootstrap Request Handling           | ✅ Supports bootstrap requests   | ✅ Handles `/bs` endpoint           | ✅ Covered      |
-| Security Object Provisioning        | ✅ Receives provisioned config   | ✅ Creates security instances       | ✅ Covered      |
-| Server Object Provisioning          | ✅ Receives provisioned config   | ✅ Creates server instances         | ✅ Covered      |
-| Bootstrap Finish                     | ✅ Sends finish notification     | ✅ Handles `/bs-finish` endpoint    | ✅ Covered      |
-| Configuration Management             | 🕐 Planned                        | ✅ Per-endpoint configuration       | 🟡 Partial      |
-|                                      |                                   |                                     |                 |
-| **Server**                           |                                   |                                     |                 |
-| LwM2M Registration (`/rd`)           | ✅ Sends registration             | ✅ Handles registration             | ✅ Covered	   |
-| Registration Update (`/rd/{id}`)     | ✅ Supports                       | ✅ Handles update                   | ✅ Covered      |
-| Deregistration                       | ✅ Sends                          | ✅ Handles deregistration           | ✅ Covered      |
-| Error Detection / Retry              | ✅ Logs failures                  | ✅ Detects connection loss          | 🛑 Not Covered  |
-| Event-Driven Responses               | 🕐 Planned                        | ✅ Emits payload per request        | 🟡 server       |
-|                                      |                                   |                                     |                 |
-| **Object Model / Discovery**         |                                   |                                     |                 |
-| Built-in Objects (0–6 + 3303)        | ✅ Fully implemented              | 🕐 Used via client introspection    | 🛑 Not Covered  |
-| Well-Known Core Discovery            | ✅ Responds with `</x/y/z>;attr`  | ✅ Parses and lists resources       | 🟡 server       |
-| Resource Metadata (R/W/X/Obs/Units)  | ✅ Defined per object             | ✅ Discoverable via `/core`         | 🛑 Not Covered  |
-| Multiple Instances                   | 🕐 Planned                        | 🕐 Planned                          | 🛑 Not Covered  |
-|                                      |                                   |                                     |                 |
-| **Resource Access**                  |                                   |                                     |                 |
-| Resource Read                        | ✅ Responds with value            | ✅ Sends GET request                | ✅ Covered      |
-| Resource Write                       | ✅ Accepts PUT                    | ✅ Sends PUT                        | ✅ Covered      |
-| Resource Execute                     | ✅ Handles function call          | ✅ Sends POST                       | ✅ Covered      |
-| Resource Observation                 | ✅ Manages and sends notifications| ✅ Sends GET with Observe=0         | ✅ Covered      |
-| Resource Write attribute             | 🟡 Partially                      | 🛑 Not yet                          | 🛑 Not Covered  |
-| Object,InstanceId Create             | 🟡 Partially                      | 🛑 Not yet                          | 🛑 Not Covered  |
-| Object,InstaceId Delete              | 🟡 Partially                      | 🛑 Not yet                          | 🛑 Not Covered  |
-| Manual Notification Push             | ✅ Interval-based observe         | ✅ Receives notifications           | 🛑 Not Covered  |
-|                                      |                                   |                                     |                 |
-| **Data Formats**                     |                                   |                                     |                 |
-| Text Format (`Content-Format: 0`)    | ✅ Default/fallback               | ✅ Default/fallback                 | ✅ Covered      |
-| Link Format (`Content-Format: 40`)   | ✅ Encode/decode (⚠️ untested)    | ✅ Encode/decode 			         | ✅ Covered      |
-| JSON Format (`Content-Format: 50`)   | ✅ Encode/decode (⚠️ untested)    | ✅ Encode/decode 			         | ✅ Covered      |
-| TLV LwM2M (`Content-Format: 60`)     | ✅ Encode/decode (⚠️ untested)    | ✅ Encode/decode                    | ✅ Covered      |
-| JSON LwM2M (`Content-Format: 61`)    | ✅ Encode/decode (⚠️ untested)    | ✅ Encode/decode                    | ✅ Covered      |
-| CBOR LwM2M (`Content-Format: 62`)    | ✅ Encode/decode (⚠️ untested)    | ✅ Encode/decode 			         | ✅ Covered      |
-|                                      |                                   |                                     |                 |
-| **Transport Layers**                 |                                   |                                     |                 |
-| COAP                                 | ✅ Default                        | ✅ Default                          | 🛑 Not Covered  |
-| MQTT                                 | ✅ Client support                 | ✅ Server support                   | ✅ Covered      |
-| MQTT Request Handling                | 🛑 Not applicable                 | ✅ Bidirectional communication     | ✅ Covered      |
-| Bridge COAP/MQTT                     | ✅ Implemented                    | ✅ Implemented                      | 🛑 Not Covered  |
-|                                      |                                   |                                     |                 |
-| **Fota**                             |                                   |                                     |                 |
-| UDP                                  | 🕐 Planned                        | 🕐 Planned                          | 🛑 Not Covered  |
-| HTTP                                 | 🛑 Not yet                        | 🛑 Not yet                          | 🛑 Not Covered  |
-|                                      |                                   |                                     |                 |
-| **Extra Features**                   |                                   |                                     |                 |
-| Object 3303 Temperature (Simulated)  | ✅ Periodic updates               | ✅ Observes value                   | 🛑 Not Covered  |
-| Security: DTLS, OSCORE               | 🛑 OSCORE not yet                | ✅ DTLS implemented                 | 🛑 Not Covered  |
-| Persistant Storage                   | 🛑 Not yet                        | 🛑 Not yet                          | 🛑 Not Covered  |
-
+| Feature                             | 🌐 Client                          | 🖥️ Server                        | ✅ Auto Tests  |
+| ----------------------------------- | ---------------------------------- | -------------------------------- | -------------- |
+| **Bootstrap Server**                |                                    |                                  |                |
+| Bootstrap Request Handling          | ✅ Supports bootstrap requests     | ✅ Handles `/bs` endpoint        | ✅ Covered     |
+| Security Object Provisioning        | ✅ Receives provisioned config     | ✅ Creates security instances    | ✅ Covered     |
+| Server Object Provisioning          | ✅ Receives provisioned config     | ✅ Creates server instances      | ✅ Covered     |
+| Bootstrap Finish                    | ✅ Sends finish notification       | ✅ Handles `/bs-finish` endpoint | ✅ Covered     |
+| Configuration Management            | 🕐 Planned                         | ✅ Per-endpoint configuration    | 🟡 Partial     |
+|                                     |                                    |                                  |                |
+| **Server**                          |                                    |                                  |                |
+| LwM2M Registration (`/rd`)          | ✅ Sends registration              | ✅ Handles registration          | ✅ Covered     |
+| Registration Update (`/rd/{id}`)    | ✅ Supports                        | ✅ Handles update                | ✅ Covered     |
+| Deregistration                      | ✅ Sends                           | ✅ Handles deregistration        | ✅ Covered     |
+| Error Detection / Retry             | ✅ Logs failures                   | ✅ Detects connection loss       | 🛑 Not Covered |
+| Event-Driven Responses              | 🕐 Planned                         | ✅ Emits payload per request     | 🟡 server      |
+|                                     |                                    |                                  |                |
+| **Object Model / Discovery**        |                                    |                                  |                |
+| Built-in Objects (0–6 + 3303)       | ✅ Fully implemented               | 🕐 Used via client introspection | 🛑 Not Covered |
+| Well-Known Core Discovery           | ✅ Responds with `</x/y/z>;attr`   | ✅ Parses and lists resources    | 🟡 server      |
+| Resource Metadata (R/W/X/Obs/Units) | ✅ Defined per object              | ✅ Discoverable via `/core`      | 🛑 Not Covered |
+| Multiple Instances                  | 🕐 Planned                         | 🕐 Planned                       | 🛑 Not Covered |
+|                                     |                                    |                                  |                |
+| **Resource Access**                 |                                    |                                  |                |
+| Resource Read                       | ✅ Responds with value             | ✅ Sends GET request             | ✅ Covered     |
+| Resource Write                      | ✅ Accepts PUT                     | ✅ Sends PUT                     | ✅ Covered     |
+| Resource Execute                    | ✅ Handles function call           | ✅ Sends POST                    | ✅ Covered     |
+| Resource Observation                | ✅ Manages and sends notifications | ✅ Sends GET with Observe=0      | ✅ Covered     |
+| Resource Write attribute            | 🟡 Partially                       | 🛑 Not yet                       | 🛑 Not Covered |
+| Object,InstanceId Create            | 🟡 Partially                       | 🛑 Not yet                       | 🛑 Not Covered |
+| Object,InstaceId Delete             | 🟡 Partially                       | 🛑 Not yet                       | 🛑 Not Covered |
+| Manual Notification Push            | ✅ Interval-based observe          | ✅ Receives notifications        | 🛑 Not Covered |
+|                                     |                                    |                                  |                |
+| **Data Formats**                    |                                    |                                  |                |
+| Text Format (`Content-Format: 0`)   | ✅ Default/fallback                | ✅ Default/fallback              | ✅ Covered     |
+| Link Format (`Content-Format: 40`)  | ✅ Encode/decode (⚠️ untested)     | ✅ Encode/decode                 | ✅ Covered     |
+| JSON Format (`Content-Format: 50`)  | ✅ Encode/decode (⚠️ untested)     | ✅ Encode/decode                 | ✅ Covered     |
+| TLV LwM2M (`Content-Format: 60`)    | ✅ Encode/decode (⚠️ untested)     | ✅ Encode/decode                 | ✅ Covered     |
+| JSON LwM2M (`Content-Format: 61`)   | ✅ Encode/decode (⚠️ untested)     | ✅ Encode/decode                 | ✅ Covered     |
+| CBOR LwM2M (`Content-Format: 62`)   | ✅ Encode/decode (⚠️ untested)     | ✅ Encode/decode                 | ✅ Covered     |
+|                                     |                                    |                                  |                |
+| **Transport Layers**                |                                    |                                  |                |
+| COAP                                | ✅ Default                         | ✅ Default                       | 🛑 Not Covered |
+| MQTT                                | ✅ Client support                  | ✅ Server support                | ✅ Covered     |
+| MQTT Request Handling               | 🛑 Not applicable                  | ✅ Bidirectional communication   | ✅ Covered     |
+| Bridge COAP/MQTT                    | ✅ Implemented                     | ✅ Implemented                   | 🛑 Not Covered |
+|                                     |                                    |                                  |                |
+| **Fota**                            |                                    |                                  |                |
+| UDP                                 | 🕐 Planned                         | 🕐 Planned                       | 🛑 Not Covered |
+| HTTP                                | 🛑 Not yet                         | 🛑 Not yet                       | 🛑 Not Covered |
+|                                     |                                    |                                  |                |
+| **Extra Features**                  |                                    |                                  |                |
+| Object 3303 Temperature (Simulated) | ✅ Periodic updates                | ✅ Observes value                | 🛑 Not Covered |
+| Security: DTLS, OSCORE              | 🛑 OSCORE not yet                  | ✅ DTLS implemented              | 🛑 Not Covered |
+| Persistant Storage                  | 🛑 Not yet                         | 🛑 Not yet                       | 🛑 Not Covered |
 
 ---
 
@@ -186,9 +192,9 @@ const validation = (ep, payload) => {
 
 // DTLS server options
 const options = {
-  port: 5684,              // Standard CoAPS (DTLS) port
-  keyPath: './ecdsa.key',   // Path to private key
-  certPath: './ecdsa.crt',  // Path to certificate
+  port: 5684, // Standard CoAPS (DTLS) port
+  keyPath: './ecdsa.key', // Path to private key
+  certPath: './ecdsa.crt', // Path to certificate
 };
 
 // Start the secure server
@@ -203,11 +209,11 @@ node server/examples/dtlsServer.js
 
 ### Configuration Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `port` | number | 5684 | DTLS server port (standard CoAPS) |
-| `keyPath` | string | './server.key' | Path to RSA/ECDSA private key |
-| `certPath` | string | './server.crt' | Path to X.509 certificate |
+| Option     | Type   | Default        | Description                       |
+| ---------- | ------ | -------------- | --------------------------------- |
+| `port`     | number | 5684           | DTLS server port (standard CoAPS) |
+| `keyPath`  | string | './server.key' | Path to RSA/ECDSA private key     |
+| `certPath` | string | './server.crt' | Path to X.509 certificate         |
 
 ### Supported Operations
 
@@ -257,7 +263,7 @@ The Bootstrap Server is a critical component that provides initial configuration
 
 ```
 1. [Client] ──── POST /bs?ep=device-id ────► [Bootstrap Server]
-2. [Client] ◄─── Delete Security Objects ─── [Bootstrap Server]  
+2. [Client] ◄─── Delete Security Objects ─── [Bootstrap Server]
 3. [Client] ◄─── Delete Server Objects ───── [Bootstrap Server]
 4. [Client] ◄─── Write Security Instance ─── [Bootstrap Server]
 5. [Client] ◄─── Write Server Instance ───── [Bootstrap Server]
@@ -268,6 +274,7 @@ The Bootstrap Server is a critical component that provides initial configuration
 ### Bootstrap Objects
 
 #### Security Object (ID: 0)
+
 Provisioned with server connection details:
 
 ```javascript
@@ -283,6 +290,7 @@ Provisioned with server connection details:
 ```
 
 #### Server Object (ID: 1)
+
 Operational parameters for the main server:
 
 ```javascript
@@ -304,22 +312,26 @@ const { setBootstrapConfiguration } = require('./server/handleBootstrap');
 
 // Configure specific device
 setBootstrapConfiguration('device-001', {
-  securityInstances: [{
-    instanceId: 0,
-    serverUri: 'coaps://production-server.com:5684',
-    isBootstrap: false,
-    securityMode: 2,  // Certificate-based security
-    shortServerId: 999,
-    publicKey: 'device-001-cert.pem',
-    secretKey: 'device-001-key.pem'
-  }],
-  serverInstances: [{
-    instanceId: 0,
-    shortServerId: 999,
-    lifetime: 3600,    // 1 hour lifetime
-    binding: 'U',
-    notificationStoring: true
-  }]
+  securityInstances: [
+    {
+      instanceId: 0,
+      serverUri: 'coaps://production-server.com:5684',
+      isBootstrap: false,
+      securityMode: 2, // Certificate-based security
+      shortServerId: 999,
+      publicKey: 'device-001-cert.pem',
+      secretKey: 'device-001-key.pem',
+    },
+  ],
+  serverInstances: [
+    {
+      instanceId: 0,
+      shortServerId: 999,
+      lifetime: 3600, // 1 hour lifetime
+      binding: 'U',
+      notificationStoring: true,
+    },
+  ],
 });
 ```
 
@@ -328,24 +340,28 @@ setBootstrapConfiguration('device-001', {
 ```javascript
 // Configure multiple devices with similar settings
 const devices = ['device-001', 'device-002', 'device-003'];
-devices.forEach(deviceId => {
+devices.forEach((deviceId) => {
   setBootstrapConfiguration(deviceId, {
-    securityInstances: [{
-      instanceId: 0,
-      serverUri: 'coap://fleet-server.example.com:5683',
-      isBootstrap: false,
-      securityMode: 1,  // PSK mode
-      shortServerId: 100,
-      publicKey: deviceId,
-      secretKey: generatePSK(deviceId)  // Your PSK generation logic
-    }],
-    serverInstances: [{
-      instanceId: 0,
-      shortServerId: 100,
-      lifetime: 86400,  // 24 hours
-      binding: 'U',
-      notificationStoring: true
-    }]
+    securityInstances: [
+      {
+        instanceId: 0,
+        serverUri: 'coap://fleet-server.example.com:5683',
+        isBootstrap: false,
+        securityMode: 1, // PSK mode
+        shortServerId: 100,
+        publicKey: deviceId,
+        secretKey: generatePSK(deviceId), // Your PSK generation logic
+      },
+    ],
+    serverInstances: [
+      {
+        instanceId: 0,
+        shortServerId: 100,
+        lifetime: 86400, // 24 hours
+        binding: 'U',
+        notificationStoring: true,
+      },
+    ],
   });
 });
 ```
@@ -374,12 +390,12 @@ sharedEmitter.on('bootstrap-finish', ({ protocol, ep }) => {
 
 ### Security Modes
 
-| Mode | Value | Description | Use Case |
-|------|--------|-------------|----------|
-| PSK | 0 | Pre-Shared Key | Simple deployments, shared secrets |
-| RPK | 1 | Raw Public Key | Certificate-less PKI |
-| Certificate | 2 | X.509 Certificates | Full PKI infrastructure |
-| NoSec | 3 | No Security | Development, testing only |
+| Mode        | Value | Description        | Use Case                           |
+| ----------- | ----- | ------------------ | ---------------------------------- |
+| PSK         | 0     | Pre-Shared Key     | Simple deployments, shared secrets |
+| RPK         | 1     | Raw Public Key     | Certificate-less PKI               |
+| Certificate | 2     | X.509 Certificates | Full PKI infrastructure            |
+| NoSec       | 3     | No Security        | Development, testing only          |
 
 ### Production Deployment
 
@@ -388,22 +404,26 @@ sharedEmitter.on('bootstrap-finish', ({ protocol, ep }) => {
 ```javascript
 // Production bootstrap configuration
 const productionConfig = {
-  securityInstances: [{
-    instanceId: 0,
-    serverUri: 'coaps://lwm2m.yourcompany.com:5684',
-    isBootstrap: false,
-    securityMode: 2,  // Use certificates in production
-    shortServerId: 1,
-    publicKey: './certs/device-cert.pem',
-    secretKey: './certs/device-key.pem'
-  }],
-  serverInstances: [{
-    instanceId: 0,
-    shortServerId: 1,
-    lifetime: 3600,      // Reasonable lifetime
-    binding: 'U',
-    notificationStoring: true
-  }]
+  securityInstances: [
+    {
+      instanceId: 0,
+      serverUri: 'coaps://lwm2m.yourcompany.com:5684',
+      isBootstrap: false,
+      securityMode: 2, // Use certificates in production
+      shortServerId: 1,
+      publicKey: './certs/device-cert.pem',
+      secretKey: './certs/device-key.pem',
+    },
+  ],
+  serverInstances: [
+    {
+      instanceId: 0,
+      shortServerId: 1,
+      lifetime: 3600, // Reasonable lifetime
+      binding: 'U',
+      notificationStoring: true,
+    },
+  ],
 };
 ```
 
@@ -417,9 +437,9 @@ sharedEmitter.on('bootstrap-request', ({ protocol, ep, timestamp }) => {
     endpoint: ep,
     protocol: protocol,
     timestamp: timestamp,
-    sourceIp: req.connection.remoteAddress
+    sourceIp: req.connection.remoteAddress,
   });
-  
+
   // Rate limiting check
   if (isRateLimited(ep)) {
     throw new Error('Too many bootstrap attempts');
@@ -465,7 +485,7 @@ For production deployments with device provisioning:
 # Terminal 1: Start Bootstrap Server
 node server/bootstrapServer.js | npx pino-pretty
 
-# Terminal 2: Start Main LwM2M Server  
+# Terminal 2: Start Main LwM2M Server
 node server/server.js | npx pino-pretty
 
 # Terminal 3: Start Bootstrap Client
@@ -506,7 +526,7 @@ console.log('Manufacturer:', response.payload.toString());
 
 // Write firmware update URL (Object 5, Instance 0, Resource 1)
 await sendCoapRequest('localhost', 5683, 'PUT', '/5/0/1', {
-  payload: Buffer.from('https://example.com/firmware.bin')
+  payload: Buffer.from('https://example.com/firmware.bin'),
 });
 
 // Execute firmware update (Object 5, Instance 0, Resource 2)
@@ -519,7 +539,7 @@ await sendCoapRequest('localhost', 5683, 'POST', '/5/0/2');
 // Start observing a resource
 await sendCoapRequest('localhost', 5683, 'GET', '/3303/0/5700', {
   observe: true,
-  confirmable: true
+  confirmable: true,
 });
 
 // Listen for notifications
@@ -551,7 +571,9 @@ sharedEmitter.on('deregistration', ({ protocol, ep }) => {
 
 // Resource events
 sharedEmitter.on('notification', ({ protocol, ep, path, payload }) => {
-  console.log(`[${protocol}] ${ep} notification ${path}: ${payload.toString()}`);
+  console.log(
+    `[${protocol}] ${ep} notification ${path}: ${payload.toString()}`
+  );
 });
 
 // Bootstrap events
@@ -576,7 +598,7 @@ const server = startResourceServer(56831);
 
 // Server automatically provides:
 // - Device object (ID 3) with manufacturer, model, etc.
-// - Connectivity monitoring (ID 4) 
+// - Connectivity monitoring (ID 4)
 // - Temperature sensor (ID 3303) with simulated values
 ```
 
@@ -594,46 +616,50 @@ The LwM2M server implementation provides a comprehensive device management platf
 ### Core Server Components
 
 #### 1. Resource Client (`server/resourceClient.js`)
+
 - **CoAP Server**: Standard LwM2M server on port 5683
 - **DTLS Server**: Secure LwM2M server on port 5684
 - **Protocol Support**: CoAP and DTLS transport layers
 - **Event Emission**: Real-time server events via shared emitter
 
 #### 2. Client Registry (`server/clientRegistry.js`)
+
 - **Device Registration**: Tracks connected devices and their metadata
 - **Location Management**: Maps registration locations to device endpoints
 - **Connection State**: Monitors device connectivity and lifecycle
 
 #### 3. Observation Registry (`server/observationRegistry.js`)
+
 - **Resource Observations**: Manages active resource observations
 - **Token Management**: Tracks observation tokens and associated resources
 - **Notification Routing**: Routes notifications to correct observers
 
 #### 4. Bootstrap Server (`server/bootstrap.js`)
+
 - **Device Provisioning**: Provides initial configuration to devices
 - **Security Management**: Provisions security objects and credentials
 - **Configuration Storage**: Per-device bootstrap configurations
 
 ### Server-Side Features
 
-| Component | Feature | Description |
-|-----------|---------|-------------|
-| **Client Management** | Registration Handling | Processes device registration requests |
-| | Lifecycle Tracking | Monitors device connect/disconnect events |
-| | Metadata Storage | Stores device information and capabilities |
-| **Security** | DTLS Support | Encrypted communication with certificate validation |
-| | Bootstrap Security | Secure device provisioning and credential management |
-| | Authentication | Configurable client validation functions |
-| **Resource Operations** | Read Operations | Handle GET requests for device resources |
-| | Write Operations | Handle PUT requests to update device state |
-| | Execute Operations | Handle POST requests for device actions |
-| | Discovery | Support for `.well-known/core` resource discovery |
-| **Observations** | Resource Monitoring | Real-time monitoring of device resources |
-| | Notification Delivery | Asynchronous notification handling |
-| | Token Management | Secure observation token tracking |
-| **Data Formats** | Content Negotiation | Support for multiple data formats |
-| | Format Conversion | Automatic encoding/decoding based on Accept headers |
-| | Binary Support | Efficient binary data handling |
+| Component               | Feature               | Description                                          |
+| ----------------------- | --------------------- | ---------------------------------------------------- |
+| **Client Management**   | Registration Handling | Processes device registration requests               |
+|                         | Lifecycle Tracking    | Monitors device connect/disconnect events            |
+|                         | Metadata Storage      | Stores device information and capabilities           |
+| **Security**            | DTLS Support          | Encrypted communication with certificate validation  |
+|                         | Bootstrap Security    | Secure device provisioning and credential management |
+|                         | Authentication        | Configurable client validation functions             |
+| **Resource Operations** | Read Operations       | Handle GET requests for device resources             |
+|                         | Write Operations      | Handle PUT requests to update device state           |
+|                         | Execute Operations    | Handle POST requests for device actions              |
+|                         | Discovery             | Support for `.well-known/core` resource discovery    |
+| **Observations**        | Resource Monitoring   | Real-time monitoring of device resources             |
+|                         | Notification Delivery | Asynchronous notification handling                   |
+|                         | Token Management      | Secure observation token tracking                    |
+| **Data Formats**        | Content Negotiation   | Support for multiple data formats                    |
+|                         | Format Conversion     | Automatic encoding/decoding based on Accept headers  |
+|                         | Binary Support        | Efficient binary data handling                       |
 
 ### Event-Driven Architecture
 
@@ -644,7 +670,7 @@ const sharedEmitter = require('./server/transport/sharedEmitter');
 
 // Available server events:
 // - 'registration': Device registered
-// - 'update': Registration updated  
+// - 'update': Registration updated
 // - 'deregistration': Device disconnected
 // - 'notification': Resource notification received
 // - 'bootstrap-request': Bootstrap requested
@@ -665,13 +691,13 @@ const productionValidation = async (ep, payload) => {
   if (!isAuthorized) {
     throw new Error(`Unauthorized device: ${ep}`);
   }
-  
+
   // Validate device capabilities
   const capabilities = parseRegistrationPayload(payload);
   if (!isValidCapabilities(capabilities)) {
     throw new Error(`Invalid capabilities for device: ${ep}`);
   }
-  
+
   return true;
 };
 
@@ -690,7 +716,7 @@ sharedEmitter.on('registration', ({ ep, location }) => {
     registeredAt: Date.now(),
     lastSeen: Date.now(),
     location: location,
-    notificationCount: 0
+    notificationCount: 0,
   });
 });
 
@@ -706,10 +732,14 @@ sharedEmitter.on('notification', ({ ep, path, payload }) => {
 // Health check endpoint
 setInterval(() => {
   const activeDevices = deviceMetrics.size;
-  const totalNotifications = Array.from(deviceMetrics.values())
-    .reduce((sum, device) => sum + device.notificationCount, 0);
-  
-  console.log(`Active devices: ${activeDevices}, Total notifications: ${totalNotifications}`);
+  const totalNotifications = Array.from(deviceMetrics.values()).reduce(
+    (sum, device) => sum + device.notificationCount,
+    0
+  );
+
+  console.log(
+    `Active devices: ${activeDevices}, Total notifications: ${totalNotifications}`
+  );
 }, 30000);
 ```
 
@@ -744,7 +774,7 @@ node server/examples/serverMqttBidirectional.js
 # Read device manufacturer
 mosquitto_pub -h localhost -t "lwm2m/requests/device001/GET/3/0/0" -m "{}"
 
-# Write temperature threshold  
+# Write temperature threshold
 mosquitto_pub -h localhost -t "lwm2m/requests/device001/PUT/3303/0/5601" -m '{"payload": "-10.0"}'
 
 # Start observing temperature
@@ -766,24 +796,24 @@ mosquitto_sub -h localhost -t "lwm2m/+/registered"
 
 ### MQTT Topic Structure
 
-| Purpose | Topic Pattern | Example |
-|---------|---------------|---------|
-| **Inbound Requests** | `{project}/requests/{endpoint}/{method}{path}` | `lwm2m/requests/device001/GET/3/0/0` |
+| Purpose                | Topic Pattern                                   | Example                               |
+| ---------------------- | ----------------------------------------------- | ------------------------------------- |
+| **Inbound Requests**   | `{project}/requests/{endpoint}/{method}{path}`  | `lwm2m/requests/device001/GET/3/0/0`  |
 | **Outbound Responses** | `{project}/responses/{endpoint}/{method}{path}` | `lwm2m/responses/device001/GET/3/0/0` |
-| **Device Data** | `{project}/{endpoint}/sensor{path}` | `lwm2m/device001/sensor/3303/0/5700` |
-| **Lifecycle Events** | `{project}/{endpoint}/{event}` | `lwm2m/device001/registered` |
+| **Device Data**        | `{project}/{endpoint}/sensor{path}`             | `lwm2m/device001/sensor/3303/0/5700`  |
+| **Lifecycle Events**   | `{project}/{endpoint}/{event}`                  | `lwm2m/device001/registered`          |
 
 ### Supported Operations
 
-| Method | Description | Payload Required | Example |
-|--------|-------------|------------------|---------|
-| `GET` | Read resource value | No | Read device manufacturer |
-| `PUT` | Write resource value | Yes | Update configuration |
-| `POST` | Execute resource | Optional | Trigger device reboot |
-| `DELETE` | Delete object instance | No | Remove configuration |
-| `DISCOVER` | Discover available resources | No | List all resources |
-| `OBSERVE` | Start observing resource | No | Monitor temperature |
-| `CANCEL-OBSERVE` | Stop observing resource | No | Stop monitoring |
+| Method           | Description                  | Payload Required | Example                  |
+| ---------------- | ---------------------------- | ---------------- | ------------------------ |
+| `GET`            | Read resource value          | No               | Read device manufacturer |
+| `PUT`            | Write resource value         | Yes              | Update configuration     |
+| `POST`           | Execute resource             | Optional         | Trigger device reboot    |
+| `DELETE`         | Delete object instance       | No               | Remove configuration     |
+| `DISCOVER`       | Discover available resources | No               | List all resources       |
+| `OBSERVE`        | Start observing resource     | No               | Monitor temperature      |
+| `CANCEL-OBSERVE` | Stop observing resource      | No               | Stop monitoring          |
 
 ### Programming Examples
 
@@ -794,10 +824,10 @@ const MqttRequestHandler = require('./server/mqttRequestHandler');
 
 const handler = new MqttRequestHandler({
   project: 'lwm2m',
-  host: 'localhost', 
+  host: 'localhost',
   port: 1883,
   username: 'user',
-  password: 'pass'
+  password: 'pass',
 });
 
 await handler.connect();
@@ -808,7 +838,7 @@ await handler.connect();
 ```javascript
 // server/examples/serverMqttBidirectional.js includes:
 // - Existing outbound data publishing
-// - New inbound request handling  
+// - New inbound request handling
 // - Unified configuration
 // - Event correlation
 ```
@@ -831,7 +861,7 @@ For detailed documentation, see [MQTT Request Handler Documentation](docs/MQTT_R
 - **OSCORE Security**: Implement Object Security for CoAP (RFC 8613)
 - **Client-Side DTLS**: Add DTLS support for LwM2M clients
 - **Persistent Storage**: Database backend for device state and configurations
-- **Error Recovery**: Enhanced error handling and automatic retry mechanisms  
+- **Error Recovery**: Enhanced error handling and automatic retry mechanisms
 - **Performance Optimization**: Connection pooling and resource caching
 - **Advanced Analytics**: Device behavior analytics and reporting dashboards
 - **Bulk Operations**: Firmware update campaigns and mass device configuration
@@ -852,5 +882,4 @@ Feel free to open issues or submit pull requests to improve this library!
 
 ---
 
-*Made with ❤️ for LwM2M enthusiasts.*
-
+_Made with ❤️ for LwM2M enthusiasts._

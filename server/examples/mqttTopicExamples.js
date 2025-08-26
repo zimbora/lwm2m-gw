@@ -2,7 +2,7 @@
 
 /**
  * MQTT Topic Structure Examples for LwM2M Communication
- * 
+ *
  * This file demonstrates different approaches to MQTT topic design
  * and provides concrete examples for various use cases.
  */
@@ -212,7 +212,7 @@ function generateTopics(project, endpoint, method, path) {
     request: `${project}/requests/${endpoint}/${method}${path}`,
     response: `${project}/responses/${endpoint}/${method}${path}`,
     data: `${project}/${endpoint}/sensor${path}`,
-    
+
     // Wildcard subscriptions
     wildcards: {
       allRequests: `${project}/requests/+/+`,
@@ -221,8 +221,8 @@ function generateTopics(project, endpoint, method, path) {
       allResponses: `${project}/responses/+/+`,
       deviceResponses: `${project}/responses/${endpoint}/+`,
       allData: `${project}/+/sensor/+`,
-      deviceData: `${project}/${endpoint}/sensor/+`
-    }
+      deviceData: `${project}/${endpoint}/sensor/+`,
+    },
   };
 }
 
@@ -232,5 +232,5 @@ console.log('Example topic generation:');
 console.log(JSON.stringify(exampleTopics, null, 2));
 
 module.exports = {
-  generateTopics
+  generateTopics,
 };

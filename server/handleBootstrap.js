@@ -18,18 +18,18 @@ const defaultBootstrapConfig = {
       serverUri: 'coap://localhost:5683',
       isBootstrap: false,
       securityMode: 3, // NoSec
-      shortServerId: 123
-    }
+      shortServerId: 123,
+    },
   ],
   serverInstances: [
     {
-      instanceId: 0, 
+      instanceId: 0,
       shortServerId: 123,
       lifetime: 300,
       binding: 'U',
-      notificationStoring: true
-    }
-  ]
+      notificationStoring: true,
+    },
+  ],
 };
 
 /**
@@ -39,7 +39,7 @@ function handleBootstrapRequest(req, res, bootstrapDeviceCall) {
   return new Promise(async (resolve, reject) => {
     try {
       const query = new URLSearchParams(req.url.split('?')[1]);
-      console.debug("query:",query)
+      console.debug('query:', query);
       const ep = query.get('ep');
       const port = query.get('port');
 
@@ -52,12 +52,12 @@ function handleBootstrapRequest(req, res, bootstrapDeviceCall) {
       let config = null;
 
       if (typeof bootstrapDeviceCall === 'function') {
-        try{
-          config = await bootstrapDeviceCall({query:query, ep:ep});
-        }catch(err){
+        try {
+          config = await bootstrapDeviceCall({ query: query, ep: ep });
+        } catch (err) {
           console.err(err);
         }
-      }else{
+      } else {
         // Get or create bootstrap configuration for this endpoint
         config = bootstrapConfigurations.get(ep);
         if (!config) {
@@ -75,15 +75,15 @@ function handleBootstrapRequest(req, res, bootstrapDeviceCall) {
         //port: req.rsinfo.port || 56830, // Default client port
         port: port || 5683, // Default client port
         ep: ep,
-        config: config
+        config: config,
       };
-      
+
       // Accept the bootstrap request
       res.code = '2.04';
       res.end();
 
       console.log(`[Bootstrap] Starting provisioning for client: ${ep}`);
-      
+
       // Start the provisioning process
       setTimeout(() => {
         provisionClient(clientInfo)
@@ -91,7 +91,9 @@ function handleBootstrapRequest(req, res, bootstrapDeviceCall) {
             console.log(`[Bootstrap] Provisioning completed for client: ${ep}`);
           })
           .catch((err) => {
-            console.error(`[Bootstrap] Provisioning failed for client: ${ep}: ${err.message}`);
+            console.error(
+              `[Bootstrap] Provisioning failed for client: ${ep}: ${err.message}`
+            );
           });
       }, 1000); // Give client time to process bootstrap response
 
@@ -140,11 +142,9 @@ async function provisionClient(clientInfo) {
   const { address, port, ep, config } = clientInfo;
 
   try {
-    
     // Step 1: Delete existing instances (clean slate)
     console.log(`[Bootstrap] Deleting existing security instances for ${ep}`);
     await deleteSecurityInstances(address, port);
-    
 
     console.log(`[Bootstrap] Deleting existing server instances for ${ep}`);
     await deleteServerInstances(address, port);
@@ -166,7 +166,6 @@ async function provisionClient(clientInfo) {
     await sendBootstrapFinish(address, port);
 
     console.log(`[Bootstrap] Successfully provisioned client: ${ep}`);
-
   } catch (error) {
     console.error(`[Bootstrap] Provisioning failed: ${error.message}`);
     throw error;
@@ -214,18 +213,13 @@ async function deleteServerInstances(address, port) {
  */
 async function createSecurityInstance(address, port, instance) {
   const security = createSecurity(instance);
-  const data = PayloadCodec.encode(security,CONTENT_FORMATS.cbor);
+  const data = PayloadCodec.encode(security, CONTENT_FORMATS.cbor);
 
   const client = { address, port };
-  
-  const response = await sendCoapRequest(
-    client, 
-    'POST', 
-    '/0', 
-    data, 
-    '', 
-    { format: CONTENT_FORMATS.cbor }
-  );
+
+  const response = await sendCoapRequest(client, 'POST', '/0', data, '', {
+    format: CONTENT_FORMATS.cbor,
+  });
 
   if (!response.code.startsWith('2.')) {
     throw new Error(`Failed to create security instance: ${response.code}`);
@@ -237,18 +231,13 @@ async function createSecurityInstance(address, port, instance) {
  */
 async function createServerInstance(address, port, instance) {
   const security = createServer(instance);
-  const data = PayloadCodec.encode(security,CONTENT_FORMATS.cbor);
+  const data = PayloadCodec.encode(security, CONTENT_FORMATS.cbor);
 
   const client = { address, port };
-  
-  const response = await sendCoapRequest(
-    client, 
-    'POST', 
-    '/1', 
-    data, 
-    '', 
-    { format: CONTENT_FORMATS.cbor }
-  );
+
+  const response = await sendCoapRequest(client, 'POST', '/1', data, '', {
+    format: CONTENT_FORMATS.cbor,
+  });
 
   if (!response.code.startsWith('2.')) {
     throw new Error(`Failed to create server instance: ${response.code}`);
@@ -265,19 +254,17 @@ async function sendBootstrapFinish(address, port) {
   if (!response.code.startsWith('2.')) {
     throw new Error(`Bootstrap finish failed: ${response.code}`);
   }
-
 }
 
 /**
  * Create TLV data for security object
  */
 function createSecurity(instance) {
-  
   const resources = [
-    { id: 0, value: instance.serverUri },           // LwM2M Server URI
-    { id: 1, value: instance.isBootstrap },         // Bootstrap Server
-    { id: 2, value: instance.securityMode },        // Security Mode
-    { id: 10, value: instance.shortServerId }       // Short Server ID
+    { id: 0, value: instance.serverUri }, // LwM2M Server URI
+    { id: 1, value: instance.isBootstrap }, // Bootstrap Server
+    { id: 2, value: instance.securityMode }, // Security Mode
+    { id: 10, value: instance.shortServerId }, // Short Server ID
   ];
 
   return resources;
@@ -287,12 +274,11 @@ function createSecurity(instance) {
  * Create TLV data for server object
  */
 function createServer(instance) {
-
   const resources = [
-    { id: 0, value: instance.shortServerId },       // Short Server ID
-    { id: 1, value: instance.lifetime },            // Lifetime
+    { id: 0, value: instance.shortServerId }, // Short Server ID
+    { id: 1, value: instance.lifetime }, // Lifetime
     { id: 6, value: instance.notificationStoring }, // Notification Storing
-    { id: 7, value: instance.binding }              // Binding
+    { id: 7, value: instance.binding }, // Binding
   ];
 
   return resources;
@@ -317,5 +303,5 @@ module.exports = {
   handleBootstrapFinish,
   setBootstrapConfiguration,
   getBootstrapConfiguration,
-  defaultBootstrapConfig
+  defaultBootstrapConfig,
 };

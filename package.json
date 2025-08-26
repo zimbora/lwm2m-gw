@@ -14,7 +14,11 @@
   },
   "scripts": {
     "test": "jest",
-    "test:ci": "jest --ci --coverage --reporters=default --reporters=github-actions --coverageReporters=text --coverageReporters=lcov --coverageReporters=json-summary"
+    "test:ci": "jest --ci --coverage --reporters=default --reporters=github-actions --coverageReporters=text --coverageReporters=lcov --coverageReporters=json-summary",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "jest": {
     "forceExit": true,
@@ -25,8 +29,12 @@
     "outputName": "junit.xml"
   },
   "devDependencies": {
+    "eslint": "^9.34.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
     "jest": "^29.7.0",
     "jest-junit": "^16.0.0",
-    "pino-pretty": "^13.0.0"
+    "pino-pretty": "^13.0.0",
+    "prettier": "^3.6.2"
   }
 }

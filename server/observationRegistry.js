@@ -12,7 +12,9 @@ const registry = new Map(); // token -> { ep, path, format, socket }
  */
 function registerObservation(token, ep, path, format, socket = null) {
   if (!token || !ep || !path || !format) {
-    throw new Error('Token, endpoint (ep), path, and format are required to register an observation.');
+    throw new Error(
+      'Token, endpoint (ep), path, and format are required to register an observation.'
+    );
   }
 
   const tokenKey = token.toString('hex'); // Convert token to a hex string for consistent storage
@@ -40,14 +42,13 @@ function getObservation(token) {
  * @returns {boolean} True if the observation was removed, false if not found.
  */
 function deregisterObservation(token) {
-
   if (!token) {
     throw new Error('Token is required to deregister an observation.');
   }
 
   const tokenKey = token.toString('hex'); // Convert token to a hex string
   const observation = registry.get(tokenKey);
-  
+
   if (observation && observation.socket) {
     // Close the associated socket to prevent socket leaks
     try {
@@ -90,5 +91,5 @@ module.exports = {
   getObservation,
   deregisterObservation,
   findTokenByEpAndPath,
-  cleanup
+  cleanup,
 };

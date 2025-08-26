@@ -12,8 +12,8 @@ describe('DTLS Transport', () => {
       options: [
         { name: 'Uri-Path', value: Buffer.from('3') },
         { name: 'Uri-Path', value: Buffer.from('0') },
-        { name: 'Uri-Path', value: Buffer.from('0') }
-      ]
+        { name: 'Uri-Path', value: Buffer.from('0') },
+      ],
     });
 
     // Parse it back
@@ -33,7 +33,7 @@ describe('DTLS Transport', () => {
       messageId: 12345,
       token: Buffer.from([0x01, 0x02]),
       payload: Buffer.from('test payload'),
-      ack: true
+      ack: true,
     });
 
     // Parse it back to verify

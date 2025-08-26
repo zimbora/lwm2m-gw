@@ -8,28 +8,27 @@ const clientRegistry = require('./server/clientRegistry');
 const sharedEmitter = require('./server/transport/sharedEmitter');
 
 // client libs
-const resourceServer = require('./client/resourceServer')
+const resourceServer = require('./client/resourceServer');
 const registration = require('./client/registration');
-const logger = require('./client/logger')
+const logger = require('./client/logger');
 
 // utils lib
 
-
 const server = {
-	bootstrap,
-	resourceClient,
-	mqttRequestHandler,
-	clientRegistry,
-	sharedEmitter,
-}
+  bootstrap,
+  resourceClient,
+  mqttRequestHandler,
+  clientRegistry,
+  sharedEmitter,
+};
 
 const client = {
-	resourceServer,
-	registration,
-	logger
-}
+  resourceServer,
+  registration,
+  logger,
+};
 
 module.exports = {
-	server,
-	client
-}
+  server,
+  client,
+};

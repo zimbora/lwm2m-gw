@@ -12,14 +12,25 @@ connectMqttClient('mqtt://broker.hivemq.com', {
 }).catch(console.error);
 */
 
-function connectMqttClient(brokerUrl, { port, username, password, clientId } = {}) {
+function connectMqttClient(
+  brokerUrl,
+  { port, username, password, clientId } = {}
+) {
   return new Promise((resolve, reject) => {
     const options = {};
 
-    if (port) options.port = port;
-    if (username) options.username = username;
-    if (password) options.password = password;
-    if (clientId) options.clientId = clientId;
+    if (port) {
+      options.port = port;
+    }
+    if (username) {
+      options.username = username;
+    }
+    if (password) {
+      options.password = password;
+    }
+    if (clientId) {
+      options.clientId = clientId;
+    }
 
     const client = mqtt.connect(brokerUrl, options);
 
@@ -31,7 +42,9 @@ function connectMqttClient(brokerUrl, { port, username, password, clientId } = {
 function sendMqttRequest(client, method, path, payload = null, options = {}) {
   return new Promise((resolve, reject) => {
     if (!client.mqttClient || typeof client.mqttClient.publish !== 'function') {
-      return reject(`MQTT client for ${client.endpoint} is not valid or not connected`);
+      return reject(
+        `MQTT client for ${client.endpoint} is not valid or not connected`
+      );
     }
 
     const topic = `${client.baseTopic || 'lwm2m'}/${client.endpoint}/${method}${path}`;
@@ -42,7 +55,7 @@ function sendMqttRequest(client, method, path, payload = null, options = {}) {
       format: options.format || 'text/plain',
       observe: options?.observe !== undefined ? options.observe : undefined,
       query: query !== undefined ? query : undefined,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     const responseTopic = `${client.baseTopic || 'lwm2m'}/${client.endpoint}/response/${method}${path}`;
@@ -52,7 +65,9 @@ function sendMqttRequest(client, method, path, payload = null, options = {}) {
 
     // Subscribe to the response topic
     client.mqttClient.subscribe(responseTopic, (err) => {
-      if (err) return reject(err);
+      if (err) {
+        return reject(err);
+      }
 
       const timeout = setTimeout(() => {
         client.mqttClient.removeListener('message', handleMessage);
@@ -70,7 +85,7 @@ function sendMqttRequest(client, method, path, payload = null, options = {}) {
                 ep: client.endpoint,
                 method,
                 path,
-                payload: parsed
+                payload: parsed,
               });
             } else {
               clearTimeout(timeout);
@@ -88,13 +103,18 @@ function sendMqttRequest(client, method, path, payload = null, options = {}) {
       client.mqttClient.on('message', handleMessage);
 
       // Publish the request
-      client.mqttClient.publish(topic, JSON.stringify(message), { qos: 1 }, (err) => {
-        if (err) {
-          clearTimeout(timeout);
-          client.mqttClient.removeListener('message', handleMessage);
-          reject(err);
+      client.mqttClient.publish(
+        topic,
+        JSON.stringify(message),
+        { qos: 1 },
+        (err) => {
+          if (err) {
+            clearTimeout(timeout);
+            client.mqttClient.removeListener('message', handleMessage);
+            reject(err);
+          }
         }
-      });
+      );
     });
   });
 }

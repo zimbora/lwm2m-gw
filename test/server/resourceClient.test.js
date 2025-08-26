@@ -10,7 +10,7 @@ const {
   putRequest,
   postRequest,
   createRequest,
-  discoveryRequest
+  discoveryRequest,
 } = require('../../server/resourceClient');
 
 const coapClient = require('../../server/transport/coapClient');
@@ -32,8 +32,12 @@ describe('resourceClient.js', () => {
       port: 5683,
     });
 
-    PayloadCodec.encode.mockImplementation((data, format) => Buffer.from(JSON.stringify(data)));
-    PayloadCodec.decode.mockImplementation((payload, format) => JSON.parse(payload.toString()));
+    PayloadCodec.encode.mockImplementation((data, format) =>
+      Buffer.from(JSON.stringify(data))
+    );
+    PayloadCodec.decode.mockImplementation((payload, format) =>
+      JSON.parse(payload.toString())
+    );
     coapClient.sendCoapRequest.mockResolvedValue({
       payload: Buffer.from(JSON.stringify({ response: 'ok' })),
       token: Buffer.from('01', 'hex'),
@@ -45,11 +49,14 @@ describe('resourceClient.js', () => {
 
     expect(coapClient.sendCoapRequest).toHaveBeenCalled();
     expect(result).toHaveProperty('payload.response', 'ok');
-    expect(sharedEmitter.emit).toHaveBeenCalledWith('response', expect.objectContaining({
-      method: 'GET',
-      ep: mockEp,
-      path: mockPath
-    }));
+    expect(sharedEmitter.emit).toHaveBeenCalledWith(
+      'response',
+      expect.objectContaining({
+        method: 'GET',
+        ep: mockEp,
+        path: mockPath,
+      })
+    );
   });
 
   test('putRequest() sends a PUT request with encoded payload', async () => {
@@ -90,7 +97,7 @@ describe('resourceClient.js', () => {
         protocol: 'coap',
         address: 'localhost',
         port: 5683,
-        ep: mockEp
+        ep: mockEp,
       }),
       'GET',
       mockPath,
@@ -98,7 +105,7 @@ describe('resourceClient.js', () => {
       '',
       expect.objectContaining({
         observe: 0,
-        format: 'text/plain'
+        format: 'text/plain',
       })
     );
     expect(result).toMatchObject({
@@ -109,20 +116,19 @@ describe('resourceClient.js', () => {
 
     // Check specifically for the presence of `token`
     expect(result).toHaveProperty('token');
-
   });
 
   test('stopObserveRequest() sends a GET request to cancel observation', async () => {
     const { stopObserveRequest } = require('../../server/resourceClient');
 
     const result = await stopObserveRequest(mockEp, mockPath, 1, 'text');
-    console.log(result)
+    console.log(result);
     expect(coapClient.sendCoapRequest).toHaveBeenCalledWith(
       expect.objectContaining({
         protocol: 'coap',
         address: 'localhost',
         port: 5683,
-        ep: mockEp
+        ep: mockEp,
       }),
       'GET',
       mockPath,
@@ -130,7 +136,7 @@ describe('resourceClient.js', () => {
       '',
       expect.objectContaining({
         observe: 1,
-        format: 'text/plain'
+        format: 'text/plain',
       })
     );
     expect(result).toMatchObject({
@@ -146,21 +152,28 @@ describe('resourceClient.js', () => {
   test('throws if client not found', async () => {
     getClient.mockReturnValue(undefined);
 
-    await expect(getRequest('unknownClient', mockPath, 'text'))
-      .rejects.toMatch('Client for ep unknownClient not found');
+    await expect(getRequest('unknownClient', mockPath, 'text')).rejects.toMatch(
+      'Client for ep unknownClient not found'
+    );
   });
 
   test('throws on encoding failure', async () => {
-    PayloadCodec.encode.mockImplementationOnce(() => { throw new Error('encode error'); });
+    PayloadCodec.encode.mockImplementationOnce(() => {
+      throw new Error('encode error');
+    });
 
-    await expect(putRequest(mockEp, mockPath, mockPayload, 'text'))
-      .rejects.toMatch('Failed to encode payload: encode error');
+    await expect(
+      putRequest(mockEp, mockPath, mockPayload, 'text')
+    ).rejects.toMatch('Failed to encode payload: encode error');
   });
 
   test('throws on decoding failure', async () => {
-    PayloadCodec.decode.mockImplementationOnce(() => { throw new Error('decode error'); });
+    PayloadCodec.decode.mockImplementationOnce(() => {
+      throw new Error('decode error');
+    });
 
-    await expect(getRequest(mockEp, mockPath, 'text'))
-      .rejects.toMatch('Failed to decode payload: decode error');
+    await expect(getRequest(mockEp, mockPath, 'text')).rejects.toMatch(
+      'Failed to decode payload: decode error'
+    );
   });
 });

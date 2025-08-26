@@ -2,15 +2,15 @@
 
 /**
  * Enhanced LwM2M MQTT Gateway with Bidirectional Communication
- * 
+ *
  * This example demonstrates how to use the MQTT Request Handler
  * for bidirectional communication between MQTT clients and LwM2M devices.
- * 
+ *
  * Features:
  * - Existing outbound data publishing (device data to MQTT)
  * - New inbound request handling (MQTT requests to devices)
  * - Topic structure for requests and responses
- * 
+ *
  * Topic Structure:
  * - Device data (outbound): {project}/{endpoint}/sensor{path}
  * - Device events (outbound): {project}/{endpoint}/registered|updated|deregistered
@@ -30,14 +30,14 @@ $.config = {
     port: process.env.MQTT_GW__PORT || '1883',
     user: process.env.MQTT_GW__USER || '',
     pwd: process.env.MQTT_GW__PWD || '',
-    client: process.env.MQTT_GW__CLIENT || 'lwm2m-gw'
-  }
+    client: process.env.MQTT_GW__CLIENT || 'lwm2m-gw',
+  },
 };
 
 const mqtt = require('mqtt');
 const MqttRequestHandler = require('../mqttRequestHandler');
 
-const { 
+const {
   startLwM2MCoapServer,
   startLwM2MMqttServer,
   discoveryRequest,
@@ -70,7 +70,7 @@ async function getInfo(clientEp) {
       await startObserveRequest(clientEp, '/3303/0/5700');
 
       // Example write operation
-      setTimeout(() => putRequest(clientEp, '/3303/0/5601', "-30.0"), 2000);
+      setTimeout(() => putRequest(clientEp, '/3303/0/5601', '-30.0'), 2000);
       setTimeout(() => getRequest(clientEp, '/3303/0/5601'), 3000);
     } catch (error) {
       console.error('[Auto Request] Error:', error);
@@ -94,21 +94,31 @@ if ($.config?.mqttGw?.enabled) {
     port: $.config?.mqttGw?.port,
     username: $.config?.mqttGw?.user,
     password: $.config?.mqttGw?.pwd,
-    clientId: $.config?.mqttGw?.client
+    clientId: $.config?.mqttGw?.client,
   });
 
   mqttRequestHandler = null;
-  
+
   $.mqttGwClient.on('connect', function () {
-    console.log(`[MQTT Gateway] Connected to: ${$.config?.mqttGw?.protocol}:${$.config?.mqttGw?.host}:${$.config?.mqttGw?.port}`);
-    
+    console.log(
+      `[MQTT Gateway] Connected to: ${$.config?.mqttGw?.protocol}:${$.config?.mqttGw?.host}:${$.config?.mqttGw?.port}`
+    );
+
     // Initialize MQTT Request Handler
-    mqttRequestHandler = new MqttRequestHandler($.mqttGwClient, $.config.mqttGw);
+    mqttRequestHandler = new MqttRequestHandler(
+      $.mqttGwClient,
+      $.config.mqttGw
+    );
 
     // Subscribe to all topics for monitoring (optional)
-    $.mqttGwClient.subscribe(`${$.config?.mqttGw?.project}/requests/#`, function (err) {
-      if (err) console.log('[MQTT Gateway] Subscribe error:', err);
-    });
+    $.mqttGwClient.subscribe(
+      `${$.config?.mqttGw?.project}/requests/#`,
+      function (err) {
+        if (err) {
+          console.log('[MQTT Gateway] Subscribe error:', err);
+        }
+      }
+    );
   });
 
   $.mqttGwClient.on('message', function (topic, message) {
@@ -130,7 +140,9 @@ if ($.config?.mqttGw?.enabled) {
 
 // Listen for registration events
 sharedEmitter.on('registration', ({ protocol, ep, location }) => {
-  console.log(`[Event] Client registered via ${protocol}: ${ep} at ${location}`);
+  console.log(
+    `[Event] Client registered via ${protocol}: ${ep} at ${location}`
+  );
   if ($.config?.mqttGw?.enabled) {
     const topic = `${$.config?.mqttGw?.project}/${ep}/registered`;
     const payload = { location: location, timestamp: Date.now() };
@@ -160,59 +172,19 @@ sharedEmitter.on('deregistration', ({ protocol, ep }) => {
 });
 
 // Listen for observation data
-sharedEmitter.on('observation', ({ protocol, ep, token, method, path, payload }) => {
-  if (!ep) return;
+sharedEmitter.on(
+  'observation',
+  ({ protocol, ep, token, method, path, payload }) => {
+    if (!ep) {
+      return;
+    }
 
-  console.log(`[Event Observation] Data received via: ${ep}/${method}${path}`);
-  console.log(`[Event Observation] Payload: ${payload}`);
-  
-  if ($.config?.mqttGw?.enabled && path) {
-    const topic = `${$.config?.mqttGw?.project}/${ep}/sensor${path}`;
-    let data = null;
-    if (typeof payload === 'object') {
-      data = payload;
-    } else {
-      data = { value: payload };
-    }
-    data.timestamp = Date.now();
-    $.mqttGwClient.publish(topic, JSON.stringify(data), { qos: 1 });
-  }
-});
+    console.log(
+      `[Event Observation] Data received via: ${ep}/${method}${path}`
+    );
+    console.log(`[Event Observation] Payload: ${payload}`);
 
-// Listen for response data
-sharedEmitter.on('response', ({ protocol, ep, method, path, payload, options, code }) => {
-  if (!code.startsWith('2.')) {
-    if ($.config?.mqttGw?.enabled) {
-      const topic = `${$.config?.mqttGw?.project}/${ep}/sensor${path}`;
-      const errorStr = {
-        error: payload,
-        timestamp: Date.now()
-      };
-      $.mqttGwClient.publish(topic, JSON.stringify(errorStr), { qos: 1 });
-    }
-    return;
-  }
-  
-  if (path === "/.well-known/core") {
-    if ($.config?.mqttGw?.enabled) {
-      if (Array.isArray(payload)) {
-        payload.forEach((object) => {
-          const topic = `${$.config?.mqttGw?.project}/${ep}/sensors${object?.path}`;
-          const payloadStr = JSON.stringify({
-            attributes: object?.attributes,
-            timestamp: Date.now()
-          });
-          $.mqttGwClient.publish(topic, payloadStr, { qos: 1 });
-        });
-      }
-    }
-  } else {
-    console.log(`[Event] Client response ${protocol}: ${ep}/${method}${path}`);
-    if (payload != null) {
-      console.log(`[Event] Client payload ${payload}`);
-    }
-    
-    if ($.config?.mqttGw?.enabled) {
+    if ($.config?.mqttGw?.enabled && path) {
       const topic = `${$.config?.mqttGw?.project}/${ep}/sensor${path}`;
       let data = null;
       if (typeof payload === 'object') {
@@ -224,7 +196,59 @@ sharedEmitter.on('response', ({ protocol, ep, method, path, payload, options, co
       $.mqttGwClient.publish(topic, JSON.stringify(data), { qos: 1 });
     }
   }
-});
+);
+
+// Listen for response data
+sharedEmitter.on(
+  'response',
+  ({ protocol, ep, method, path, payload, options, code }) => {
+    if (!code.startsWith('2.')) {
+      if ($.config?.mqttGw?.enabled) {
+        const topic = `${$.config?.mqttGw?.project}/${ep}/sensor${path}`;
+        const errorStr = {
+          error: payload,
+          timestamp: Date.now(),
+        };
+        $.mqttGwClient.publish(topic, JSON.stringify(errorStr), { qos: 1 });
+      }
+      return;
+    }
+
+    if (path === '/.well-known/core') {
+      if ($.config?.mqttGw?.enabled) {
+        if (Array.isArray(payload)) {
+          payload.forEach((object) => {
+            const topic = `${$.config?.mqttGw?.project}/${ep}/sensors${object?.path}`;
+            const payloadStr = JSON.stringify({
+              attributes: object?.attributes,
+              timestamp: Date.now(),
+            });
+            $.mqttGwClient.publish(topic, payloadStr, { qos: 1 });
+          });
+        }
+      }
+    } else {
+      console.log(
+        `[Event] Client response ${protocol}: ${ep}/${method}${path}`
+      );
+      if (payload != null) {
+        console.log(`[Event] Client payload ${payload}`);
+      }
+
+      if ($.config?.mqttGw?.enabled) {
+        const topic = `${$.config?.mqttGw?.project}/${ep}/sensor${path}`;
+        let data = null;
+        if (typeof payload === 'object') {
+          data = payload;
+        } else {
+          data = { value: payload };
+        }
+        data.timestamp = Date.now();
+        $.mqttGwClient.publish(topic, JSON.stringify(data), { qos: 1 });
+      }
+    }
+  }
+);
 
 sharedEmitter.on('error', (error) => {
   console.error('[Event] Error:', error);
@@ -233,7 +257,7 @@ sharedEmitter.on('error', (error) => {
 // Define a validation function
 function validateRegistration(ep, options) {
   console.log(`[Validation] Validating registration for endpoint: ${ep}`);
-  
+
   if (!ep || ep.length < 3) {
     console.error(`[Validation Failed] Endpoint "${ep}" is invalid`);
     return false;
@@ -253,18 +277,17 @@ startLwM2MCoapServer(validateRegistration);
 setInterval(() => {
   const clients = listClients();
   console.log('[Server] Registered clients:', clients);
-  
+
   // Optionally publish client list to MQTT
   if ($.config?.mqttGw?.enabled && clients.length > 0) {
     const topic = `${$.config?.mqttGw?.project}/server/clients`;
     const payload = {
       clients: clients,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
     $.mqttGwClient.publish(topic, JSON.stringify(payload), { qos: 1 });
   }
 }, 60000);
-
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Promise Rejection:', reason);
@@ -276,7 +299,15 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-console.log('[Startup] Enhanced LwM2M MQTT Gateway with bidirectional communication started.');
-console.log('[Info] Send MQTT requests to: {project}/requests/{endpoint}/{method}{path}');
-console.log('[Info] Receive responses on: {project}/responses/{endpoint}/{method}{path}');
-console.log('[Info] Device data published to: {project}/{endpoint}/sensor{path}');
+console.log(
+  '[Startup] Enhanced LwM2M MQTT Gateway with bidirectional communication started.'
+);
+console.log(
+  '[Info] Send MQTT requests to: {project}/requests/{endpoint}/{method}{path}'
+);
+console.log(
+  '[Info] Receive responses on: {project}/responses/{endpoint}/{method}{path}'
+);
+console.log(
+  '[Info] Device data published to: {project}/{endpoint}/sensor{path}'
+);

@@ -1,10 +1,10 @@
 // test/server/bootstrap.test.js
 const { startBootstrapServer } = require('../../server/bootstrap');
-const { 
-  handleBootstrapRequest, 
+const {
+  handleBootstrapRequest,
   handleBootstrapFinish,
   setBootstrapConfiguration,
-  getBootstrapConfiguration 
+  getBootstrapConfiguration,
 } = require('../../server/handleBootstrap');
 const coap = require('coap');
 
@@ -22,7 +22,7 @@ describe('Bootstrap Server', () => {
     if (server) {
       server.close();
     }
-    
+
     done();
   });
 
@@ -37,11 +37,11 @@ describe('Bootstrap Server', () => {
       port: BOOTSTRAP_PORT,
       pathname: '/bs',
       method: 'POST',
-      query: 'ep=test-client-bootstrap'
+      query: 'ep=test-client-bootstrap',
     });
 
     req.on('response', (res) => {
-      console.log(res)
+      console.log(res);
       expect(res.code).toBe('2.04');
       done();
     });
@@ -56,7 +56,7 @@ describe('Bootstrap Server', () => {
       port: BOOTSTRAP_PORT,
       pathname: '/bs-finish',
       method: 'POST',
-      query: 'ep=test-client-bootstrap'
+      query: 'ep=test-client-bootstrap',
     });
 
     req.on('response', (res) => {
@@ -73,7 +73,7 @@ describe('Bootstrap Server', () => {
       hostname: 'localhost',
       port: BOOTSTRAP_PORT,
       pathname: '/unknown',
-      method: 'GET'
+      method: 'GET',
     });
 
     req.on('response', (res) => {
@@ -95,8 +95,8 @@ describe('Bootstrap Configuration', () => {
           serverUri: 'coap://test-server:5683',
           isBootstrap: false,
           securityMode: 3,
-          shortServerId: 999
-        }
+          shortServerId: 999,
+        },
       ],
       serverInstances: [
         {
@@ -104,9 +104,9 @@ describe('Bootstrap Configuration', () => {
           shortServerId: 999,
           lifetime: 1200,
           binding: 'U',
-          notificationStoring: false
-        }
-      ]
+          notificationStoring: false,
+        },
+      ],
     };
 
     setBootstrapConfiguration('test-endpoint', testConfig);
@@ -117,7 +117,7 @@ describe('Bootstrap Configuration', () => {
 
   test('should return default configuration for unknown endpoint', () => {
     const config = getBootstrapConfiguration('unknown-endpoint');
-    
+
     expect(config).toBeDefined();
     expect(config.securityInstances).toBeDefined();
     expect(config.serverInstances).toBeDefined();
@@ -130,15 +130,15 @@ describe('Bootstrap Request Handling', () => {
   test('should handle valid bootstrap request', async () => {
     const mockReq = {
       url: '/bs?ep=test-client',
-      rsinfo: { address: '127.0.0.1', port: 56830 }
+      rsinfo: { address: '127.0.0.1', port: 56830 },
     };
     const mockRes = {
       code: null,
-      end: jest.fn()
+      end: jest.fn(),
     };
 
     const result = await handleBootstrapRequest(mockReq, mockRes);
-    
+
     expect(result.ep).toBe('test-client');
     expect(mockRes.code).toBe('2.04');
     expect(mockRes.end).toHaveBeenCalled();
@@ -147,29 +147,31 @@ describe('Bootstrap Request Handling', () => {
   test('should reject bootstrap request without ep parameter', async () => {
     const mockReq = {
       url: '/bs',
-      rsinfo: { address: '127.0.0.1', port: 56830 }
+      rsinfo: { address: '127.0.0.1', port: 56830 },
     };
     const mockRes = {
       code: null,
-      end: jest.fn()
+      end: jest.fn(),
     };
 
-    await expect(handleBootstrapRequest(mockReq, mockRes)).rejects.toThrow('Missing ep in bootstrap request');
+    await expect(handleBootstrapRequest(mockReq, mockRes)).rejects.toThrow(
+      'Missing ep in bootstrap request'
+    );
     expect(mockRes.code).toBe('4.00');
   });
 
   test('should handle valid bootstrap finish', async () => {
     const mockReq = {
       url: '/bs-finish?ep=test-client',
-      rsinfo: { address: '127.0.0.1', port: 56830 }
+      rsinfo: { address: '127.0.0.1', port: 56830 },
     };
     const mockRes = {
       code: null,
-      end: jest.fn()
+      end: jest.fn(),
     };
 
     const result = await handleBootstrapFinish(mockReq, mockRes);
-    
+
     expect(result.ep).toBe('test-client');
     expect(mockRes.code).toBe('2.04');
     expect(mockRes.end).toHaveBeenCalled();

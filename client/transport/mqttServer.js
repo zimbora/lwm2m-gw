@@ -3,13 +3,18 @@
 const mqtt = require('mqtt');
 
 let client;
-let observers = {}; // key: path, value: array of observer objects (here, just subscriber clientIds)
+const observers = {}; // key: path, value: array of observer objects (here, just subscriber clientIds)
 
-function createServer(handler, options = { brokerUrl: 'mqtt://localhost:1883', clientId: 'lwm2m-server' }) {
+function createServer(
+  handler,
+  options = { brokerUrl: 'mqtt://localhost:1883', clientId: 'lwm2m-server' }
+) {
   client = mqtt.connect(options.brokerUrl, { clientId: options.clientId });
 
   client.on('connect', () => {
-    $.logger.info(`[Client] MQTT Resource server connected to broker ${options.brokerUrl}`);
+    $.logger.info(
+      `[Client] MQTT Resource server connected to broker ${options.brokerUrl}`
+    );
     // Subscribe to all resource request topics
     client.subscribe('lwm2m/requests/#', (err) => {
       if (err) {
@@ -21,7 +26,11 @@ function createServer(handler, options = { brokerUrl: 'mqtt://localhost:1883', c
   client.on('message', (topic, messageBuffer) => {
     // Example topic: lwm2m/requests/3/0/0 (object/instance/resource)
     const topicParts = topic.split('/');
-    if (topicParts.length < 4 || topicParts[0] !== 'lwm2m' || topicParts[1] !== 'requests') {
+    if (
+      topicParts.length < 4 ||
+      topicParts[0] !== 'lwm2m' ||
+      topicParts[1] !== 'requests'
+    ) {
       return;
     }
 
@@ -39,7 +48,12 @@ function createServer(handler, options = { brokerUrl: 'mqtt://localhost:1883', c
       handler(path, payload, (responsePath, responsePayload) => {
         // Publish response to a corresponding response topic
         const responseTopic = `lwm2m/responses/${responsePath}`;
-        client.publish(responseTopic, typeof responsePayload === 'string' ? responsePayload : JSON.stringify(responsePayload));
+        client.publish(
+          responseTopic,
+          typeof responsePayload === 'string'
+            ? responsePayload
+            : JSON.stringify(responsePayload)
+        );
       });
     }
   });
@@ -48,7 +62,9 @@ function createServer(handler, options = { brokerUrl: 'mqtt://localhost:1883', c
 }
 
 function sendNotification(observer, path, value) {
-  if (!$.client.registered) return;
+  if (!$.client.registered) {
+    return;
+  }
 
   $.logger.info(`[Client] Sending MQTT notification for ${path}: ${value}`);
 
@@ -79,5 +95,5 @@ module.exports = {
   sendNotification,
   stopObservation,
   getObservers,
-  getClient
+  getClient,
 };

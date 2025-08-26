@@ -1,5 +1,8 @@
 // test/client/bootstrap.test.js
-const { requestBootstrap, sendBootstrapFinish } = require('../../client/bootstrap');
+const {
+  requestBootstrap,
+  sendBootstrapFinish,
+} = require('../../client/bootstrap');
 const coap = require('coap');
 
 // Mock the global $ object
@@ -7,8 +10,8 @@ global.$ = {
   logger: {
     info: jest.fn(),
     error: jest.fn(),
-    debug: jest.fn()
-  }
+    debug: jest.fn(),
+  },
 };
 
 describe('Bootstrap Client', () => {
@@ -45,24 +48,40 @@ describe('Bootstrap Client', () => {
   });
 
   test('should successfully request bootstrap', async () => {
-    const result = await requestBootstrap('test-client', 'localhost', BOOTSTRAP_PORT);
+    const result = await requestBootstrap(
+      'test-client',
+      'localhost',
+      BOOTSTRAP_PORT
+    );
     expect(result).toBeUndefined(); // Function resolves without returning value
-    expect($.logger.info).toHaveBeenCalledWith('[Bootstrap Client] Bootstrap request accepted');
+    expect($.logger.info).toHaveBeenCalledWith(
+      '[Bootstrap Client] Bootstrap request accepted'
+    );
   });
 
   test('should successfully send bootstrap finish', async () => {
-    const result = await sendBootstrapFinish('test-client', 'localhost', BOOTSTRAP_PORT);
+    const result = await sendBootstrapFinish(
+      'test-client',
+      'localhost',
+      BOOTSTRAP_PORT
+    );
     expect(result).toBeUndefined(); // Function resolves without returning value
-    expect($.logger.info).toHaveBeenCalledWith('[Bootstrap Client] Bootstrap finish acknowledged');
+    expect($.logger.info).toHaveBeenCalledWith(
+      '[Bootstrap Client] Bootstrap finish acknowledged'
+    );
   });
 
   test('should handle bootstrap request failure', async () => {
     // Test with invalid port to trigger error
-    await expect(requestBootstrap('test-client', 'localhost', 9999)).rejects.toThrow();
+    await expect(
+      requestBootstrap('test-client', 'localhost', 9999)
+    ).rejects.toThrow();
   });
 
   test('should handle bootstrap finish failure', async () => {
     // Test with invalid port to trigger error
-    await expect(sendBootstrapFinish('test-client', 'localhost', 9999)).rejects.toThrow();
+    await expect(
+      sendBootstrapFinish('test-client', 'localhost', 9999)
+    ).rejects.toThrow();
   });
 });

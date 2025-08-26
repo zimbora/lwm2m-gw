@@ -5,7 +5,7 @@ const CONTENT_FORMATS = {
   cbor: 'application/cbor',
   tlv: 'application/vnd.oma.lwm2m+tlv',
   link: 'application/link-format',
-  
+
   // Numeric format codes
   0: 'text/plain',
   40: 'application/link-format',
@@ -13,7 +13,6 @@ const CONTENT_FORMATS = {
   60: 'application/vnd.oma.lwm2m+tlv',
   61: 'application/vnd.oma.lwm2m+json',
   62: 'application/vnd.oma.lwm2m+cbor',
-
 };
 
 module.exports = CONTENT_FORMATS;

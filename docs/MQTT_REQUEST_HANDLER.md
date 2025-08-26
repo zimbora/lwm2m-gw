@@ -13,11 +13,13 @@ This module provides bidirectional MQTT communication for the LwM2M server, allo
 ## MQTT Topic Structure
 
 ### Inbound Requests (MQTT → LwM2M Device)
+
 ```
 {project}/requests/{endpoint}/{method}{path}
 ```
 
 Examples:
+
 - `lwm2m/requests/device1/GET/3/0/0` - Read device manufacturer
 - `lwm2m/requests/device1/PUT/3303/0/5601` - Write temperature minimum range
 - `lwm2m/requests/device1/POST/3/0/4` - Execute reboot
@@ -25,28 +27,34 @@ Examples:
 - `lwm2m/requests/device1/DISCOVER` - Discover available resources
 
 ### Outbound Responses (LwM2M Device → MQTT)
+
 ```
 {project}/responses/{endpoint}/{method}{path}
 ```
 
 Examples:
+
 - `lwm2m/responses/device1/GET/3/0/0` - Response with manufacturer name
 - `lwm2m/responses/device1/PUT/3303/0/5601` - Response confirming write operation
 - `lwm2m/responses/device1/OBSERVE/3303/0/5700` - Response confirming observation started
 
 ### Device Data (Existing - unchanged)
+
 ```
 {project}/{endpoint}/sensor{path}
 ```
 
 Examples:
+
 - `lwm2m/device1/sensor/3303/0/5700` - Temperature sensor data
 - `lwm2m/device1/sensor/6/0/7` - Current timestamp
 
 ## Message Formats
 
 ### Request Message Format
+
 Send requests as JSON payload:
+
 ```json
 {
   "payload": "value_to_write_or_execute",
@@ -57,19 +65,23 @@ Send requests as JSON payload:
 ```
 
 **Supported format values:**
+
 - `"text"` - Plain text format (default)
-- `"json"` - JSON format  
+- `"json"` - JSON format
 - `"cbor"` - CBOR binary format
 - `"tlv"` - LwM2M TLV format
 - `"link"` - Core Link format (used for discovery)
 
 For simple operations, you can send plain text:
+
 ```
 "simple_value"
 ```
 
 ### Response Message Format
+
 Responses are always JSON:
+
 ```json
 {
   "timestamp": 1699123456789,
@@ -81,10 +93,11 @@ Responses are always JSON:
 ```
 
 ### Error Response Format
+
 ```json
 {
   "timestamp": 1699123456789,
-  "endpoint": "device1", 
+  "endpoint": "device1",
   "method": "GET",
   "path": "/3/0/0",
   "data": {
@@ -100,26 +113,29 @@ The MQTT Request Handler supports different content formats for both sending req
 #### Sending Different Formats
 
 **JSON Format:**
+
 ```json
 {
-  "payload": {"temperature": 25.5},
-  "options": {"format": "json"}
+  "payload": { "temperature": 25.5 },
+  "options": { "format": "json" }
 }
 ```
 
 **CBOR Format (binary):**
+
 ```json
 {
-  "payload": {"sensor_data": [1, 2, 3]},
-  "options": {"format": "cbor"}
+  "payload": { "sensor_data": [1, 2, 3] },
+  "options": { "format": "cbor" }
 }
 ```
 
 **TLV Format (LwM2M specific):**
+
 ```json
 {
-  "payload": {"resourceId": 5700, "value": 25.5, "type": "float"},
-  "options": {"format": "tlv"}
+  "payload": { "resourceId": 5700, "value": 25.5, "type": "float" },
+  "options": { "format": "tlv" }
 }
 ```
 
@@ -140,7 +156,7 @@ const handler = new MqttRequestHandler({
   port: 1883,
   username: 'user',
   password: 'pass',
-  clientId: 'lwm2m-handler'
+  clientId: 'lwm2m-handler',
 });
 
 await handler.connect();
@@ -156,7 +172,7 @@ const mqttRequestHandler = new MqttRequestHandler({
   enabled: true,
   project: 'lwm2m',
   host: 'localhost',
-  port: 1883
+  port: 1883,
 });
 
 await mqttRequestHandler.connect();
@@ -164,15 +180,15 @@ await mqttRequestHandler.connect();
 
 ## Supported LwM2M Operations
 
-| Method | Description | Example Topic | Payload Required |
-|--------|-------------|---------------|------------------|
-| GET | Read resource value | `lwm2m/requests/device1/GET/3/0/0` | No |
-| PUT | Write resource value | `lwm2m/requests/device1/PUT/3/0/1` | Yes |
-| POST | Execute resource | `lwm2m/requests/device1/POST/3/0/4` | Optional |
-| DELETE | Delete object instance | `lwm2m/requests/device1/DELETE/3/1` | No |
-| DISCOVER | Discover resources | `lwm2m/requests/device1/DISCOVER` | No |
-| OBSERVE | Start observing | `lwm2m/requests/device1/OBSERVE/3303/0/5700` | No |
-| CANCEL-OBSERVE | Stop observing | `lwm2m/requests/device1/CANCEL-OBSERVE/3303/0/5700` | No |
+| Method         | Description            | Example Topic                                       | Payload Required |
+| -------------- | ---------------------- | --------------------------------------------------- | ---------------- |
+| GET            | Read resource value    | `lwm2m/requests/device1/GET/3/0/0`                  | No               |
+| PUT            | Write resource value   | `lwm2m/requests/device1/PUT/3/0/1`                  | Yes              |
+| POST           | Execute resource       | `lwm2m/requests/device1/POST/3/0/4`                 | Optional         |
+| DELETE         | Delete object instance | `lwm2m/requests/device1/DELETE/3/1`                 | No               |
+| DISCOVER       | Discover resources     | `lwm2m/requests/device1/DISCOVER`                   | No               |
+| OBSERVE        | Start observing        | `lwm2m/requests/device1/OBSERVE/3303/0/5700`        | No               |
+| CANCEL-OBSERVE | Stop observing         | `lwm2m/requests/device1/CANCEL-OBSERVE/3303/0/5700` | No               |
 
 ## Configuration Options
 
@@ -202,7 +218,7 @@ mosquitto_pub -h localhost -t "lwm2m/requests/device1/GET/3/0/0" -m '{"options":
 # Write temperature threshold (plain text)
 mosquitto_pub -h localhost -t "lwm2m/requests/device1/PUT/3303/0/5601" -m '{"payload": "-10.0"}'
 
-# Write configuration in JSON format  
+# Write configuration in JSON format
 mosquitto_pub -h localhost -t "lwm2m/requests/device1/PUT/3303/0/5601" -m '{"payload": {"threshold": -10.0}, "options": {"format": "json"}}'
 
 # Write binary data in CBOR format
@@ -249,11 +265,13 @@ The MQTT Request Handler is designed to work alongside the existing `serverMqttG
 ## Testing
 
 Run the test suite:
+
 ```bash
 npm test test/server/mqttRequestHandler.test.js
 ```
 
 The tests cover:
+
 - Request parsing
 - Method routing
 - Configuration handling

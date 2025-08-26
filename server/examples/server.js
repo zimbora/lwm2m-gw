@@ -2,7 +2,7 @@
 
 global.$ = {};
 
-const { 
+const {
   startLwM2MCoapServer,
   startLwM2MMqttServer,
   discoveryRequest,
@@ -16,8 +16,7 @@ const {
 } = require('../resourceClient');
 
 const sharedEmitter = require('../transport/sharedEmitter');
-const {listClients} = require('../clientRegistry');
-
+const { listClients } = require('../clientRegistry');
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Promise Rejection:', reason);
@@ -30,25 +29,25 @@ async function getInfo(clientEp) {
     const client = clientEp;
     //console.log(`sending requests to client: ${client}`)
 
-    try{
+    try {
       // Read
-      discoveryRequest(clientEp)
+      discoveryRequest(clientEp);
 
-      getRequest(clientEp,'/3/0/0')
+      getRequest(clientEp, '/3/0/0');
 
-      getRequest(clientEp,'/3303/0/5601')
+      getRequest(clientEp, '/3303/0/5601');
 
       // Observe timestamp
-      startObserveRequest(clientEp,'/6/0/7');
+      startObserveRequest(clientEp, '/6/0/7');
 
       // Observe Temperature
-      startObserveRequest(clientEp,'/3303/0/5700');
+      startObserveRequest(clientEp, '/3303/0/5700');
 
       // Write
-      setTimeout(() => putRequest(clientEp,'/3303/0/5601', "-30.0"), 2000);
+      setTimeout(() => putRequest(clientEp, '/3303/0/5601', '-30.0'), 2000);
 
-      setTimeout(() => getRequest(clientEp,'/3303/0/5601'), 3000);
-    }catch(error){
+      setTimeout(() => getRequest(clientEp, '/3303/0/5601'), 3000);
+    } catch (error) {
       console.error(error);
     }
     // Execute
@@ -57,9 +56,9 @@ async function getInfo(clientEp) {
 
   setTimeout(() => {
     const client = clientEp;
-    try{
-      getRequest(clientEp,'/3303/0/5601');
-    }catch(error){
+    try {
+      getRequest(clientEp, '/3303/0/5601');
+    } catch (error) {
       console.error(error);
     }
   }, 10000);
@@ -67,7 +66,9 @@ async function getInfo(clientEp) {
 
 // Listen for registration events
 sharedEmitter.on('registration', ({ protocol, ep, location }) => {
-  console.log(`[Event] Client registered via ${protocol}: ${ep} at ${location}`);
+  console.log(
+    `[Event] Client registered via ${protocol}: ${ep} at ${location}`
+  );
   getInfo(ep);
 });
 
@@ -81,23 +82,29 @@ sharedEmitter.on('deregistration', ({ protocol, ep }) => {
   console.log(`[Event] Client deregistered via ${protocol}: ${ep}`);
 });
 
-sharedEmitter.on('observation', ({ protocol, ep, token, method, path, payload }) => {
-  
-  console.log(`[Event] Data received via: ${ep}/${method}${path}`);
-  console.log(`[Event] payload: ${payload}`);
-});
-
-sharedEmitter.on('response', ({ protocol, ep, method, path, payload, options, error }) => {
-  //console.log(options)
-  if(path == "/.well-known/core"){
-    
-  }else{
-    console.log(`[Event] Client response ${protocol}: ${ep}/${method}${path}`);
-    if(payload != null)
-      console.log(`[Event] Client payload ${payload}`);
+sharedEmitter.on(
+  'observation',
+  ({ protocol, ep, token, method, path, payload }) => {
+    console.log(`[Event] Data received via: ${ep}/${method}${path}`);
+    console.log(`[Event] payload: ${payload}`);
   }
+);
 
-});
+sharedEmitter.on(
+  'response',
+  ({ protocol, ep, method, path, payload, options, error }) => {
+    //console.log(options)
+    if (path == '/.well-known/core') {
+    } else {
+      console.log(
+        `[Event] Client response ${protocol}: ${ep}/${method}${path}`
+      );
+      if (payload != null) {
+        console.log(`[Event] Client payload ${payload}`);
+      }
+    }
+  }
+);
 
 sharedEmitter.on('error', (error) => {
   console.error(error);
@@ -106,7 +113,7 @@ sharedEmitter.on('error', (error) => {
 // Define a validation function
 function validateRegistration(ep, options) {
   console.log(`[Validation] Validating registration for endpoint: ${ep}`);
-  
+
   // Example validation logic
   if (!ep || ep.length < 3) {
     console.error(`[Validation Failed] Endpoint "${ep}" is invalid`);
@@ -117,22 +124,21 @@ function validateRegistration(ep, options) {
   return true;
 }
 
-startLwM2MCoapServer(validation = validateRegistration);
+startLwM2MCoapServer((validation = validateRegistration));
 
 startLwM2MMqttServer('mqtt://broker.hivemq.com', {
   port: 1883,
   username: 'myuser',
   password: 'mypassword',
   clientId: 'myLwM2MMqttServer',
-}).then((mqttClient) => {
-  console.log('MQTT LwM2M server is running.');
-}).catch((err) => {
-  console.error('Failed to start MQTT LwM2M server:', err.message);
-});
+})
+  .then((mqttClient) => {
+    console.log('MQTT LwM2M server is running.');
+  })
+  .catch((err) => {
+    console.error('Failed to start MQTT LwM2M server:', err.message);
+  });
 
-
-setInterval(()=>{
+setInterval(() => {
   console.log('[Server] Registered clients:', listClients());
-},60000)
-
-
+}, 60000);

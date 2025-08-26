@@ -9,7 +9,7 @@ The Bootstrap Server provides initial configuration and provisioning capabilitie
 ### Key Capabilities
 
 - **✅ Security Object Provisioning**: Manages LwM2M Security Object (ID: 0) instances
-- **✅ Server Object Provisioning**: Manages LwM2M Server Object (ID: 1) instances  
+- **✅ Server Object Provisioning**: Manages LwM2M Server Object (ID: 1) instances
 - **✅ Per-Device Configuration**: Customizable bootstrap configurations per endpoint
 - **✅ TLV Encoding**: Efficient binary encoding for object provisioning
 - **✅ Event Monitoring**: Real-time bootstrap lifecycle events
@@ -35,18 +35,21 @@ The Bootstrap Server provides initial configuration and provisioning capabilitie
 ## Architecture
 
 ### Bootstrap Server (`server/bootstrap.js`)
+
 - Runs on port 5684 (standard LwM2M bootstrap port)
 - Handles `/bs` bootstrap requests
 - Handles `/bs-finish` completion notifications
 - Emits events for bootstrap lifecycle
 
 ### Bootstrap Handler (`server/handleBootstrap.js`)
+
 - Processes bootstrap requests and provisioning
 - Manages bootstrap configurations per endpoint
 - Handles object instance creation/deletion
 - Implements TLV encoding for object data
 
 ### Bootstrap Client (`client/bootstrap.js`)
+
 - Requests bootstrap from bootstrap server
 - Waits for provisioning to complete
 - Sends bootstrap finish notification
@@ -128,8 +131,8 @@ setBootstrapConfiguration('device-001', {
       securityMode: 2, // PSK
       shortServerId: 999,
       publicKey: 'device-001',
-      secretKey: 'shared-secret'
-    }
+      secretKey: 'shared-secret',
+    },
   ],
   serverInstances: [
     {
@@ -137,9 +140,9 @@ setBootstrapConfiguration('device-001', {
       shortServerId: 999,
       lifetime: 3600,
       binding: 'U',
-      notificationStoring: true
-    }
-  ]
+      notificationStoring: true,
+    },
+  ],
 });
 ```
 
@@ -148,7 +151,7 @@ setBootstrapConfiguration('device-001', {
 1. **Bootstrap Request**: Client sends POST to `/bs?ep=<endpoint-name>`
 2. **Provisioning**: Server provisions security and server objects
    - Deletes existing security instances (Object 0)
-   - Deletes existing server instances (Object 1)  
+   - Deletes existing server instances (Object 1)
    - Creates new security instances with server configuration
    - Creates new server instances with operational parameters
 3. **Bootstrap Finish**: Server sends bootstrap finish to client
@@ -176,11 +179,13 @@ sharedEmitter.on('bootstrap-finish', ({ protocol, ep }) => {
 ## Testing
 
 Run bootstrap server tests:
+
 ```bash
 npm test -- test/server/bootstrap.test.js
 ```
 
 Run bootstrap client tests:
+
 ```bash
 npm test -- test/client/bootstrap.test.js
 ```
@@ -188,11 +193,13 @@ npm test -- test/client/bootstrap.test.js
 ## Demo Workflow
 
 1. Start bootstrap server:
+
    ```bash
    node server/bootstrapServer.js
    ```
 
 2. Start main LwM2M server (in another terminal):
+
    ```bash
    node server/server.js
    ```
@@ -203,6 +210,7 @@ npm test -- test/client/bootstrap.test.js
    ```
 
 The client will:
+
 1. Connect to bootstrap server (port 5684)
 2. Receive provisioning configuration
 3. Connect to main LwM2M server (port 5683)
@@ -217,22 +225,26 @@ The bootstrap server can be used alongside DTLS-enabled LwM2M servers for end-to
 ```javascript
 // Bootstrap configuration for DTLS server
 const secureDTLSConfig = {
-  securityInstances: [{
-    instanceId: 0,
-    serverUri: 'coaps://secure.lwm2m-server.com:5684',  // CoAPS URI
-    isBootstrap: false,
-    securityMode: 2,        // Certificate-based security
-    shortServerId: 1,
-    publicKey: './device-cert.pem',     // Device certificate
-    secretKey: './device-key.pem'      // Device private key
-  }],
-  serverInstances: [{
-    instanceId: 0,
-    shortServerId: 1,
-    lifetime: 86400,        // 24 hour lifetime
-    binding: 'U',
-    notificationStoring: true
-  }]
+  securityInstances: [
+    {
+      instanceId: 0,
+      serverUri: 'coaps://secure.lwm2m-server.com:5684', // CoAPS URI
+      isBootstrap: false,
+      securityMode: 2, // Certificate-based security
+      shortServerId: 1,
+      publicKey: './device-cert.pem', // Device certificate
+      secretKey: './device-key.pem', // Device private key
+    },
+  ],
+  serverInstances: [
+    {
+      instanceId: 0,
+      shortServerId: 1,
+      lifetime: 86400, // 24 hour lifetime
+      binding: 'U',
+      notificationStoring: true,
+    },
+  ],
 };
 
 // Configure device for secure connection

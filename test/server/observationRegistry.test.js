@@ -1,4 +1,8 @@
-const { registerObservation, getObservation, deregisterObservation } = require('../../server/observationRegistry');
+const {
+  registerObservation,
+  getObservation,
+  deregisterObservation,
+} = require('../../server/observationRegistry');
 
 describe('ObservationRegistry', () => {
   let registry;
@@ -8,7 +12,6 @@ describe('ObservationRegistry', () => {
   const path = '/3/0/13';
   const format = 'text';
   const socket = null;
-
 
   test('registerObservation stores observation with buffer token', () => {
     const result = registerObservation(tokenBuffer, ep, path, format);
@@ -46,7 +49,9 @@ describe('ObservationRegistry', () => {
 
   test('throws error when registering without required fields', () => {
     expect(() => registerObservation(null, ep, path, format)).toThrow();
-    expect(() => registerObservation(tokenBuffer, null, path, format)).toThrow();
+    expect(() =>
+      registerObservation(tokenBuffer, null, path, format)
+    ).toThrow();
     expect(() => registerObservation(tokenBuffer, ep, null, format)).toThrow();
     expect(() => registerObservation(tokenBuffer, ep, path, null)).toThrow();
   });
