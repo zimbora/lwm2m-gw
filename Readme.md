@@ -2,8 +2,26 @@
 # LwM2M Node.js Library
 
 [![Tests](https://github.com/zimbora/lwm2m-node/actions/workflows/test.yml/badge.svg)](https://github.com/zimbora/lwm2m-node/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/zimbora/lwm2m-gw/graph/badge.svg?token=3WZ5SMDRTH)](https://codecov.io/gh/zimbora/lwm2m-gw)
+[![CodeQL](https://github.com/OWNER/REPO/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/OWNER/REPO/actions/workflows/codeql.yml)
 
-[![codecov](https://codecov.io/gh/zimbora/lwm2m-node/branch/main/graph/badge.svg)](https://codecov.io/gh/zimbora/lwm2m-node)
+[![npm version](https://img.shields.io/npm/v/PACKAGE-NAME.svg)](https://www.npmjs.com/package/PACKAGE-NAME)
+[![node](https://img.shields.io/node/v/PACKAGE-NAME.svg)](https://www.npmjs.com/package/PACKAGE-NAME)
+[![license](https://img.shields.io/npm/l/PACKAGE-NAME.svg)](LICENSE)
+[![npm downloads](https://img.shields.io/npm/dm/PACKAGE-NAME.svg)](https://www.npmjs.com/package/PACKAGE-NAME)
+[![types](https://img.shields.io/npm/types/PACKAGE-NAME.svg)](https://www.npmjs.com/package/PACKAGE-NAME)
+
+[![ESLint](https://img.shields.io/badge/lint-eslint-4B32C3.svg)](https://eslint.org)
+[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://prettier.io)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://www.conventionalcommits.org)
+[![Release with Changesets](https://img.shields.io/badge/Release%20with-Changesets-000000.svg)](https://github.com/changesets/changesets)
+
+[![bundle size](https://img.shields.io/bundlephobia/minzip/PACKAGE-NAME.svg)](https://bundlephobia.com/package/PACKAGE-NAME)
+[![Known Vulnerabilities](https://snyk.io/test/github/OWNER/REPO/badge.svg)](https://snyk.io/test/github/OWNER/REPO)
+[![last commit](https://img.shields.io/github/last-commit/OWNER/REPO.svg)](https://github.com/OWNER/REPO/commits)
+[![issues](https://img.shields.io/github/issues/OWNER/REPO.svg)](https://github.com/OWNER/REPO/issues)
+[![PRs](https://img.shields.io/github/issues-pr/OWNER/REPO.svg)](https://github.com/OWNER/REPO/pulls)
+
 
 A comprehensive **Lightweight Machine to Machine (LwM2M)** implementation in Node.js featuring both client and server components with support for CoAP, DTLS encryption, and full bootstrap capabilities.
 
