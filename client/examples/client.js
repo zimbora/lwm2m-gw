@@ -6,7 +6,6 @@ $.logger = require('../logger.js')
 const { startResourceServer } = require('../resourceServer');
 const { registerToServer, updateRegistration, deregister } = require('../registration');
 
-
 const endpointName = 'node-client-001';
 const serverHost = 'localhost';
 const serverPort = 5683;
