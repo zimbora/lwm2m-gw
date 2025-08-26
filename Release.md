@@ -20,6 +20,6 @@
 	launch release on git:
 		>> gh release create ${tag}
 
-## 4th step
+## 4th step (automated)
 	
-	npm publish
+	npm publish - **now automated via GitHub Actions when a release is created**
