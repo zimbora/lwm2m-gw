@@ -3,10 +3,8 @@
 global.$ = {};
 
 // server/bootstrapServer.js - Standalone Bootstrap Server
-const { startBootstrapServer } = require('../bootstrap');
+const { server } = require('../../index');
 const { setBootstrapConfiguration } = require('../handleBootstrap');
-
-const sharedEmitter = require('../transport/sharedEmitter');
 
 console.log('Starting LwM2M Bootstrap Server...');
 
@@ -59,24 +57,24 @@ async function bootstrapDeviceCallback({query, ep}){
 }
 
 // Start the bootstrap server
-const server = startBootstrapServer(bootstrapDeviceCallback);
+const bootstrapServer = server.bootstrap.startBootstrapServer(bootstrapDeviceCallback);
 
-sharedEmitter.on('bootstrap-request', ({protocol, ep}) => {
+server.sharedEmitter.on('bootstrap-request', ({protocol, ep}) => {
   console.log(`[Bootstrap Server] Bootstrap request from: ${ep}`);
 });
 
-sharedEmitter.on('error',  ({protocol, ep}) => {  
+server.sharedEmitter.on('error',  ({protocol, ep}) => {  
   console.log(`[Bootstrap Server] Bootstrap finished for: ${ep}`);
 });
 
-sharedEmitter.on('error', (error) => {
+server.sharedEmitter.on('error', (error) => {
   console.log(error);
 });
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
   console.log('\n[Bootstrap] Shutting down gracefully...');
-  server.close(() => {
+  bootstrapServer.close(() => {
     console.log('[Bootstrap] Server closed');
     process.exit(0);
   });

@@ -35,7 +35,10 @@ $.config = {
 };
 
 const mqtt = require('mqtt');
-const MqttRequestHandler = require('../mqttRequestHandler');
+
+const { server } = require('../../index');
+
+const MqttRequestHandler = server.mqttRequestHandler;
 
 const { 
   startLwM2MCoapServer,
@@ -48,10 +51,10 @@ const {
   postRequest,
   deleteRequest,
   createRequest,
-} = require('../resourceClient');
+} = server.resourceClient;
 
-const sharedEmitter = require('../transport/sharedEmitter');
-const { listClients } = require('../clientRegistry');
+const sharedEmitter = server.sharedEmitter;
+const { listClients } = server.clientRegistry;
 
 async function getInfo(clientEp) {
   // Delay to wait for client registration

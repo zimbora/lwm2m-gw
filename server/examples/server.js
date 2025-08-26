@@ -2,6 +2,8 @@
 
 global.$ = {};
 
+const { server } = require('../../index');
+
 const { 
   startLwM2MCoapServer,
   startLwM2MMqttServer,
@@ -13,10 +15,10 @@ const {
   postRequest,
   deleteRequest,
   createRequest,
-} = require('../resourceClient');
+} = server.resourceClient;
 
-const sharedEmitter = require('../transport/sharedEmitter');
-const {listClients} = require('../clientRegistry');
+const sharedEmitter = server.sharedEmitter;
+const {listClients} = server.clientRegistry;
 
 
 process.on('unhandledRejection', (reason, promise) => {
