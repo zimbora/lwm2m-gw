@@ -3,7 +3,7 @@
 
 [![Tests](https://github.com/zimbora/lwm2m-node/actions/workflows/test.yml/badge.svg)](https://github.com/zimbora/lwm2m-node/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/zimbora/lwm2m-gw/graph/badge.svg?token=3WZ5SMDRTH)](https://codecov.io/gh/zimbora/lwm2m-gw)
-[![CodeQL](https://github.com/OWNER/REPO/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/OWNER/REPO/actions/workflows/codeql.yml)
+[![CodeQL](https://github.com/zimbora/lwm2m-gw/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/zimbora/lwm2m-gw/actions/workflows/codeql.yml)
 
 [![npm version](https://img.shields.io/npm/v/lwm2m-gw.svg)](https://www.npmjs.com/package/lwm2m-gw)
 [![node](https://img.shields.io/node/v/lwm2m-gw.svg)](https://www.npmjs.com/package/lwm2m-gw)
