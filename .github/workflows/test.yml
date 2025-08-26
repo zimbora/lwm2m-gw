@@ -40,18 +40,32 @@ jobs:
     - name: Run tests with coverage
       run: npm run test:ci
 
+    - name: Display Coverage Summary
+      if: always()
+      run: node .github/scripts/coverage-summary.js
+
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v5
       with:
         use_oidc: true
         fail_ci_if_error: false
 
-    #- name: Publish Test Results
-    #  uses: dorny/test-reporter@v1
+    - name: Upload coverage reports as artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-reports-${{ matrix.node-version }}
+        path: |
+          coverage/
+          junit.xml
+        retention-days: 30
+
+    - name: Publish Test Results
+      uses: dorny/test-reporter@v1
       # Run even if tests fail, but skip for forked PRs (cannot create checks there)
-    #  if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-    #  with:
-    #    name: Jest Tests (${{ matrix.node-version }})
-    #    path: junit.xml
-    #    reporter: jest-junit
-    #    fail-on-error: true
+      if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+      with:
+        name: Jest Tests (${{ matrix.node-version }})
+        path: junit.xml
+        reporter: jest-junit
+        fail-on-error: true

@@ -14,11 +14,26 @@
   },
   "scripts": {
     "test": "jest",
-    "test:ci": "jest --ci --coverage --reporters=default --reporters=github-actions"
+    "test:ci": "jest --ci --coverage --reporters=default --reporters=github-actions --reporters=jest-junit"
   },
   "jest": {
     "forceExit": true,
-    "testTimeout": 30000
+    "testTimeout": 30000,
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "**/*.js",
+      "!**/node_modules/**",
+      "!**/test/**",
+      "!**/coverage/**",
+      "!jest.config.js",
+      "!**/docs/**"
+    ],
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "clover",
+      "json-summary"
+    ]
   },
   "jest-junit": {
     "outputDirectory": "./",
