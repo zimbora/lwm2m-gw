@@ -128,7 +128,10 @@ class MqttRequestHandler {
     
     switch (method.toUpperCase()) {
       case 'GET':
-        return await getRequest(endpoint, path, format);
+        if(path === "/.well-known/core")
+          return await discoveryRequest(endpoint);
+        else
+          return await getRequest(endpoint, path, format);
         
       case 'PUT':
         if (payload === null || payload === undefined) {
