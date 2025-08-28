@@ -24,9 +24,10 @@ const coapEnabled = true;
 const mqttEnabled = false;
 
 
-
 // === method to initialize client based on protocol ===
-function startLwM2MCoapServer(validation, port = 5683) {
+function startLwM2MCoapServer(validation, port, options = {}) {
+  port = options?.port || 5683; // Standard CoAPS (DTLS) port
+
   //const server = coap.createServer({ type: 'udp6' }) for IPV6
   const server = coap.createServer((req, res) => {
     const path = req?.url.split('?')[0];
@@ -110,7 +111,7 @@ function startLwM2MCoapServer(validation, port = 5683) {
 
   server.listen(port, () => {
     console.log(`[CoAP] LwM2M Server listening on port ${port}`);
-    startTimeoutManager(); // Start monitoring client timeouts
+    startTimeoutManager(options?.client?.offlineTimeout, options?.client?.checkInterval); // Start monitoring client timeouts
   });
 
   return server;
@@ -345,7 +346,7 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
     
     dtlsServer.listen(port, () => {
       console.log(`[DTLS] LwM2M Server listening on port ${port}`);
-      startTimeoutManager(); // Start monitoring client timeouts
+      startTimeoutManager(options?.client?.offlineTimeout, options?.client?.checkInterval); // Start monitoring client timeouts
     });
     
     dtlsServer.on('error', (err) => {

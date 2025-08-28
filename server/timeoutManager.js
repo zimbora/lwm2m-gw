@@ -7,7 +7,8 @@ const CHECK_INTERVAL = 30 * 1000; // Check every 30 seconds
 
 let timeoutInterval = null;
 
-function startTimeoutManager() {
+function startTimeoutManager(offlineTimeout = OFFLINE_TIMEOUT, checkInterval = OFFLINE_TIMEOUT) {
+
   if (timeoutInterval) {
     clearInterval(timeoutInterval);
   }
@@ -15,8 +16,8 @@ function startTimeoutManager() {
   console.log('[Timeout Manager] Starting client timeout monitoring');
   
   timeoutInterval = setInterval(() => {
-    checkClientTimeouts();
-  }, CHECK_INTERVAL);
+    checkClientTimeouts(offlineTimeout = OFFLINE_TIMEOUT);
+  }, checkInterval);
 
   // Prevent the interval from keeping the process alive
   timeoutInterval.unref();
@@ -32,7 +33,7 @@ function stopTimeoutManager() {
   }
 }
 
-function checkClientTimeouts() {
+function checkClientTimeouts(offlineTimeout) {
   const now = Date.now();
   const clients = listClients();
 
