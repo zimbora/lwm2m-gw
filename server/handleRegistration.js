@@ -21,7 +21,7 @@ function handleRegister(req, res, protocol, validRegistration) {
         const authorized = await validRegistration(ep);
         if (!authorized) {
           res.code = '5.00';
-          res.end('Registration error');
+          res.end('Registration error: not authorized');
           return reject(new Error('Registration not authorized'));
         }
       }

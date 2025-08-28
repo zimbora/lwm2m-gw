@@ -2,6 +2,7 @@
 
 // server libs
 const bootstrap = require('./server/bootstrap');
+const handleBootstrap = require('./server/handleBootstrap');
 const resourceClient = require('./server/resourceClient');
 const mqttRequestHandler = require('./server/mqttRequestHandler');
 const clientRegistry = require('./server/clientRegistry');
@@ -17,6 +18,7 @@ const logger = require('./client/logger')
 
 const server = {
 	bootstrap,
+	handleBootstrap,
 	resourceClient,
 	mqttRequestHandler,
 	clientRegistry,

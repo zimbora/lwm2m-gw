@@ -15,7 +15,7 @@ const { performBootstrap } = require('../bootstrap');
 
 const endpointName = 'node-client-bootstrap-001';
 const bootstrapHost = 'localhost';
-const bootstrapPort = 5684;
+const bootstrapPort = 5783;
 const serverHost = 'localhost';
 const serverPort = 5683;
 const localPort = 56830;
