@@ -3,7 +3,10 @@ const {
   getClient,
   updateClient,
   deregisterClientByLocation,
-  listClients
+  listClients,
+  updateClientActivity,
+  setClientOffline,
+  deregisterClient
 } = require('../../server/clientRegistry');
 
 describe('Client Registry', () => {
@@ -23,7 +26,10 @@ describe('Client Registry', () => {
 
   test('registerClient and getClient', () => {
     const result = getClient(ep);
-    expect(result).toEqual(info);
+    expect(result).toMatchObject(info); // Use toMatchObject to ignore additional fields
+    expect(result).toHaveProperty('lastActivity');
+    expect(result).toHaveProperty('registeredAt');
+    expect(result).toHaveProperty('offline', false);
   });
 
   test('updateClient with valid location', () => {
@@ -34,6 +40,7 @@ describe('Client Registry', () => {
     const updatedClient = getClient(ep);
     expect(updatedClient.lifetime).toBe(120);
     expect(updatedClient.address).toBe(info.address); // unchanged
+    expect(updatedClient.offline).toBe(false); // Should be set to false on update
   });
 
   test('updateClient with invalid location returns null', () => {
@@ -57,5 +64,49 @@ describe('Client Registry', () => {
     expect(Array.isArray(clients)).toBe(true);
     expect(clients).toHaveLength(1);
     expect(clients[0]).toMatchObject({ ep, ...info });
+  });
+
+  test('updateClientActivity updates lastActivity and clears offline', () => {
+    // First set the client offline
+    setClientOffline(ep);
+    let client = getClient(ep);
+    expect(client.offline).toBe(true);
+
+    // Then update activity
+    const result = updateClientActivity(ep);
+    expect(result).toBe(true);
+    
+    client = getClient(ep);
+    expect(client.offline).toBe(false);
+    expect(client.lastActivity).toBeGreaterThan(Date.now() - 1000); // Recent activity
+  });
+
+  test('updateClientActivity returns false for unknown client', () => {
+    const result = updateClientActivity('unknown');
+    expect(result).toBe(false);
+  });
+
+  test('setClientOffline marks client as offline', () => {
+    const result = setClientOffline(ep);
+    expect(result).toBe(true);
+    
+    const client = getClient(ep);
+    expect(client.offline).toBe(true);
+  });
+
+  test('setClientOffline returns false for unknown client', () => {
+    const result = setClientOffline('unknown');
+    expect(result).toBe(false);
+  });
+
+  test('deregisterClient removes client by endpoint', () => {
+    const result = deregisterClient(ep);
+    expect(result).toBe(true);
+    expect(getClient(ep)).toBeUndefined();
+  });
+
+  test('deregisterClient returns false for unknown client', () => {
+    const result = deregisterClient('unknown');
+    expect(result).toBe(false);
   });
 });

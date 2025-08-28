@@ -1,7 +1,14 @@
 const clients = new Map(); // key: ep, value: { address, port, location }
 
 function registerClient(ep, info) {
-  clients.set(ep, info);
+  const now = Date.now();
+  const clientInfo = {
+    ...info,
+    lastActivity: now,
+    registeredAt: now,
+    offline: false
+  };
+  clients.set(ep, clientInfo);
 }
 
 function getClient(ep) {
@@ -11,7 +18,13 @@ function getClient(ep) {
 function updateClient(locationPath, info) {
   for (const [ep, clientInfo] of clients.entries()) {
     if (clientInfo.location === locationPath) {
-      clients.set(ep, { ...clients.get(ep), ...info });
+      const updatedInfo = { 
+        ...clients.get(ep), 
+        ...info, 
+        lastActivity: Date.now(),
+        offline: false // Client is active again
+      };
+      clients.set(ep, updatedInfo);
       return ep;
     }
   }
@@ -41,6 +54,32 @@ function listClients() {
   return result;
 }
 
+function updateClientActivity(ep) {
+  const client = clients.get(ep);
+  if (client) {
+    clients.set(ep, { 
+      ...client, 
+      lastActivity: Date.now(),
+      offline: false 
+    });
+    return true;
+  }
+  return false;
+}
+
+function setClientOffline(ep) {
+  const client = clients.get(ep);
+  if (client) {
+    clients.set(ep, { ...client, offline: true });
+    return true;
+  }
+  return false;
+}
+
+function deregisterClient(ep) {
+  return clients.delete(ep);
+}
+
 module.exports = {
   registerClient,
   updateClient,
@@ -48,4 +87,7 @@ module.exports = {
   deregisterClientByLocation,
   associateSocketToClient,
   listClients,
+  updateClientActivity,
+  setClientOffline,
+  deregisterClient,
 };

@@ -15,15 +15,19 @@ const CONTENT_FORMATS = require('../utils/contentFormats');
 const { 
   getClient,
   associateSocketToClient,
+  updateClientActivity,
 } = require('./clientRegistry');
+
+const { startTimeoutManager, stopTimeoutManager } = require('./timeoutManager');
 
 const coapEnabled = true;
 const mqttEnabled = false;
 
 
-
 // === method to initialize client based on protocol ===
-function startLwM2MCoapServer(validation, port = 5683) {
+function startLwM2MCoapServer(validation, port, options = {}) {
+  port = options?.port || 5683; // Standard CoAPS (DTLS) port
+
   //const server = coap.createServer({ type: 'udp6' }) for IPV6
   const server = coap.createServer((req, res) => {
     const path = req?.url.split('?')[0];
@@ -62,6 +66,11 @@ function startLwM2MCoapServer(validation, port = 5683) {
         const decodedPayload = PayloadCodec.decode(req?.payload, 'text/plain');
 
         const observation = getObservation(decodedToken);
+
+        // Update client activity for observation data
+        if (observation?.ep) {
+          updateClientActivity(observation.ep);
+        }
 
         // Emit the observation with useful details
         sharedEmitter.emit('observation', {
@@ -102,6 +111,7 @@ function startLwM2MCoapServer(validation, port = 5683) {
 
   server.listen(port, () => {
     console.log(`[CoAP] LwM2M Server listening on port ${port}`);
+    startTimeoutManager(options?.client?.offlineTimeout, options?.client?.checkInterval); // Start monitoring client timeouts
   });
 
   return server;
@@ -279,6 +289,11 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
 
               const observation = getObservation(decodedToken);
 
+              // Update client activity for observation data
+              if (observation?.ep) {
+                updateClientActivity(observation.ep);
+              }
+
               // Emit the observation with useful details
               sharedEmitter.emit('observation', {
                 protocol: 'dtls',
@@ -331,6 +346,7 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
     
     dtlsServer.listen(port, () => {
       console.log(`[DTLS] LwM2M Server listening on port ${port}`);
+      startTimeoutManager(options?.client?.offlineTimeout, options?.client?.checkInterval); // Start monitoring client timeouts
     });
     
     dtlsServer.on('error', (err) => {
@@ -391,6 +407,7 @@ function startLwM2MMqttServer(brokerUrl, mqttOptions = {}) {
         throw err;
       }
       console.log(`[MQTT Server] Subscribed to topic: ${lwm2mTopic}`);
+      startTimeoutManager(); // Start monitoring client timeouts
     });
 
     return mqttClient;
@@ -439,6 +456,10 @@ function dispatchRequest(ep, method, path, payload = null, options = {}) {
     if(response?.socket?._isClosed == false){
       associateSocketToClient(ep,response.socket);
     }
+    
+    // Update client activity when we receive a response
+    updateClientActivity(ep);
+    
     try {
       decodedPayload = PayloadCodec.decode(response?.payload,options.format)
     } catch (err) {

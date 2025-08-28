@@ -79,8 +79,17 @@ sharedEmitter.on('update', ({ protocol, ep, location }) => {
 });
 
 // Listen for deregistration events
-sharedEmitter.on('deregistration', ({ protocol, ep }) => {
-  console.log(`[Event] Client deregistered via ${protocol}: ${ep}`);
+sharedEmitter.on('deregistration', ({ protocol, ep, reason }) => {
+  if (reason === 'lifetime_expired') {
+    console.log(`[Event] Client deregistered due to lifetime expiry via ${protocol}: ${ep}`);
+  } else {
+    console.log(`[Event] Client deregistered via ${protocol}: ${ep}`);
+  }
+});
+
+// Listen for client offline events
+sharedEmitter.on('client_offline', ({ protocol, ep, timeSinceLastActivity }) => {
+  console.log(`[Event] Client marked offline via ${protocol}: ${ep} (inactive for ${Math.round(timeSinceLastActivity/1000)}s)`);
 });
 
 sharedEmitter.on('observation', ({ protocol, ep, token, method, path, payload }) => {
