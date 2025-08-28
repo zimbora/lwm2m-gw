@@ -2,12 +2,13 @@
 
 ## 0 step	
 
-	- Run npm test.js - check results
+	- Run npm test - check results
 
 ## 1st step
 	
 	- Add changes to Changelog.md file
 	- increase version of package.json file
+	- run npm install
 
 ## 2nd step
 	
