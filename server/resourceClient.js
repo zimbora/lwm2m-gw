@@ -509,6 +509,7 @@ function startObserveRequest(ep, path, observe = 0, format = 'text') {
       try {
         // Register the observation in the registry, including the socket for cleanup
         registerObservation(token, ep, path, format, socket);
+        sharedEmitter.emit('startObservation', { ep, token, path });
         return { token, ep, path, format};
       } catch (error) {
         throw new Error(`Register observation error: ${error.message}`);
@@ -529,6 +530,7 @@ function stopObserveRequest(ep, path, observe = 1, format = 'text') {
         token = findTokenByEpAndPath(ep, path)
       }
       deregisterObservation(token);
+      sharedEmitter.emit('stopObservation', { ep, token, path });
       return { token, ep, path, format};
     }catch(error){
       throw new Error(`Deregister error: ${error}`);
