@@ -16,6 +16,7 @@ const BOOTSTRAP_PORT = 5783; // Standard LwM2M Bootstrap port
  */
 
 function startBootstrapServer(bootstrapDeviceCall = null, port = BOOTSTRAP_PORT) {
+
   const server = coap.createServer((req, res) => {
     const path = req?.url.split('?')[0];
     const method = req?.method;
@@ -55,15 +56,6 @@ function startBootstrapServer(bootstrapDeviceCall = null, port = BOOTSTRAP_PORT)
 
   return server;
 }
-
-// Listen for bootstrap events
-sharedEmitter.on('bootstrap-request', ({ protocol, ep }) => {
-  console.log(`[Bootstrap Event] Client ${ep} requested bootstrap via ${protocol}`);
-});
-
-sharedEmitter.on('bootstrap-finish', ({ protocol, ep }) => {
-  console.log(`[Bootstrap Event] Client ${ep} finished bootstrap via ${protocol}`);
-});
 
 module.exports = {
   startBootstrapServer,

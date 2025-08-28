@@ -19,6 +19,10 @@
 
 const path = require('path');
 
+global.$ = {};
+
+const { server } = require('../../index');
+
 const { 
   startLwM2MCoapServer,
   startLwM2MMqttServer,
@@ -30,10 +34,10 @@ const {
   postRequest,
   deleteRequest,
   createRequest,
-} = require('../resourceClient');
+  startLwM2MDTLSCoapServer
+} = server.resourceClient;
 
-const sharedEmitter = require('../transport/sharedEmitter');
-const { startLwM2MDTLSCoapServer } = require('../resourceClient');
+const sharedEmitter = server.sharedEmitter;
 
 // Validation function for client registration
 const validation = (ep, payload) => {

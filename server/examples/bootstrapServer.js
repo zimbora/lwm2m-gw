@@ -3,15 +3,13 @@
 global.$ = {};
 
 // server/bootstrapServer.js - Standalone Bootstrap Server
-const { startBootstrapServer } = require('../bootstrap');
-const { setBootstrapConfiguration } = require('../handleBootstrap');
+const { server } = require('../../index');
+const sharedEmitter = server.sharedEmitter;
 
-const sharedEmitter = require('../transport/sharedEmitter');
-
-console.log('Starting LwM2M Bootstrap Server...');
+const bootstrapPort = 5783
 
 // Example: Set custom bootstrap configuration for specific clients
-setBootstrapConfiguration('node-client-bootstrap-001', {
+server.handleBootstrap.setBootstrapConfiguration('node-client-bootstrap-001', {
   securityInstances: [
     {
       instanceId: 0,
@@ -59,7 +57,7 @@ async function bootstrapDeviceCallback({query, ep}){
 }
 
 // Start the bootstrap server
-const server = startBootstrapServer(bootstrapDeviceCallback);
+const bootstrapServer = server.bootstrap.startBootstrapServer(bootstrapDeviceCallback,bootstrapPort);
 
 sharedEmitter.on('bootstrap-request', ({protocol, ep}) => {
   console.log(`[Bootstrap Server] Bootstrap request from: ${ep}`);
@@ -76,7 +74,7 @@ sharedEmitter.on('error', (error) => {
 // Handle graceful shutdown
 process.on('SIGINT', () => {
   console.log('\n[Bootstrap] Shutting down gracefully...');
-  server.close(() => {
+  bootstrapServer.close(() => {
     console.log('[Bootstrap] Server closed');
     process.exit(0);
   });
