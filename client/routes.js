@@ -10,11 +10,19 @@ const { encodeResourcesToCBOR, decodeCBOR } = require('../utils/cbor');
 const { encodeTLV, decodeTLV } = require('../utils/tlv');
 const PayloadCodec = require('../utils/payloadCodec');
 const CONTENT_FORMATS = require('../utils/contentFormats');
-const { getObjectModule,getResource,getResourceSet, addInstance } = require('./objects');
+const { getObjectModule,getResource,getResourceSet, addInstance, getDynamicObjects } = require('./objects');
 
 function handleDiscoveryRequest(res) {
   const links = [];
-  const objectIds = [0, 1, 2, 3, 4, 5, 6, 3303];
+  // Get static object IDs
+  const staticObjectIds = [0, 1, 2, 3, 4, 5, 6, 3303];
+  
+  // Get dynamic object IDs
+  const dynamicObjects = getDynamicObjects();
+  const dynamicObjectIds = Object.keys(dynamicObjects).map(id => parseInt(id));
+  
+  // Combine all object IDs
+  const objectIds = [...staticObjectIds, ...dynamicObjectIds];
 
   for (const objectId of objectIds) {
     const instanceId = 0;

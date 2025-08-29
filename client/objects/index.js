@@ -6,9 +6,66 @@ const connectivity = require('./connectivityMonitoring');
 const firmware = require('./firmwareUpdate');
 const location = require('./location');
 const temperature = require('./temperature');
+const fs = require('fs');
+const path = require('path');
+
+// Storage for dynamically loaded objects
+let dynamicObjects = {};
+
+function loadObjectsFromFile(filePath) {
+  try {
+    const fullPath = path.resolve(filePath);
+    if (!fs.existsSync(fullPath)) {
+      throw new Error(`Objects configuration file not found: ${fullPath}`);
+    }
+    
+    const configData = fs.readFileSync(fullPath, 'utf8');
+    const config = JSON.parse(configData);
+    
+    if (!config.objects || !Array.isArray(config.objects)) {
+      throw new Error('Invalid objects configuration: objects array is required');
+    }
+    
+    // Convert config format to internal object format
+    for (const objConfig of config.objects) {
+      if (!objConfig.id || !objConfig.instances) {
+        continue;
+      }
+      
+      // Create object structure compatible with existing code
+      const objectModule = {
+        id: objConfig.id,
+        name: objConfig.name || `Object ${objConfig.id}`,
+        instances: {}
+      };
+      
+      // Convert instances array to instances object
+      for (const instanceConfig of objConfig.instances) {
+        const instanceId = instanceConfig.instanceId || 0;
+        objectModule.instances[instanceId] = {
+          resources: instanceConfig.resources || {}
+        };
+      }
+      
+      dynamicObjects[objConfig.id] = objectModule;
+    }
+    
+    return Object.keys(dynamicObjects).length;
+  } catch (error) {
+    throw new Error(`Failed to load objects from file: ${error.message}`);
+  }
+}
 
 function getObjectModule(objectId) {
-  switch (parseInt(objectId)) {
+  const id = parseInt(objectId);
+  
+  // First check dynamically loaded objects
+  if (dynamicObjects[id]) {
+    return dynamicObjects[id];
+  }
+  
+  // Then check static objects
+  switch (id) {
     case 0: return security;
     case 1: return serverObj;
     case 2: return accessControl;
@@ -92,5 +149,7 @@ module.exports = {
 	getObjectModule,
   getResource,
   getResourceSet,
-  addInstance
+  addInstance,
+  loadObjectsFromFile,
+  getDynamicObjects: () => dynamicObjects
 };
