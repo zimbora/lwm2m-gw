@@ -6,6 +6,7 @@ const handleBootstrap = require('./server/handleBootstrap');
 const resourceClient = require('./server/resourceClient');
 const mqttRequestHandler = require('./server/mqttRequestHandler');
 const clientRegistry = require('./server/clientRegistry');
+const observationRegistry = require('./server/observationRegistry');
 const sharedEmitter = require('./server/transport/sharedEmitter');
 
 // client libs
@@ -22,6 +23,7 @@ const server = {
 	resourceClient,
 	mqttRequestHandler,
 	clientRegistry,
+	observationRegistry,
 	sharedEmitter,
 }
 

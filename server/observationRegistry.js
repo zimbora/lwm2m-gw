@@ -10,8 +10,8 @@ const registry = new Map(); // token -> { ep, path, format, socket }
  * @param {string} format - Format of the observation (e.g., text, json, cbor, tlv).
  * @param {Object} socket - Optional DTLS socket for cleanup.
  */
-function registerObservation(token, ep, path, format, socket = null) {
-  if (!token || !ep || !path || !format) {
+function registerObservation(token, ep, path, format = 0, socket = null) {
+  if (!token || !ep || !path) {
     throw new Error('Token, endpoint (ep), path, and format are required to register an observation.');
   }
 
