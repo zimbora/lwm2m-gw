@@ -45,10 +45,9 @@ describe('ObservationRegistry', () => {
   });
 
   test('throws error when registering without required fields', () => {
-    expect(() => registerObservation(null, ep, path, format)).toThrow();
-    expect(() => registerObservation(tokenBuffer, null, path, format)).toThrow();
-    expect(() => registerObservation(tokenBuffer, ep, null, format)).toThrow();
-    expect(() => registerObservation(tokenBuffer, ep, path, null)).toThrow();
+    expect(() => registerObservation(null, ep, path)).toThrow();
+    expect(() => registerObservation(tokenBuffer, null, path)).toThrow();
+    expect(() => registerObservation(tokenBuffer, ep, null)).toThrow();
   });
 
   test('throws error when retrieving with no token', () => {
