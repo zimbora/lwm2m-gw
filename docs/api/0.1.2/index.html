@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LwM2M Gateway API Documentation v0.1.2</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fafafa;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+        .version {
+            opacity: 0.9;
+            font-size: 1.2rem;
+            margin-top: 0.5rem;
+        }
+        .toc {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .toc h2 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .toc ul {
+            margin: 0;
+            padding-left: 1.5rem;
+        }
+        .toc li {
+            margin: 0.5rem 0;
+        }
+        .toc a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+        }
+        .module {
+            margin-bottom: 2rem;
+        }
+        .module h3 {
+            color: #764ba2;
+            background: #f8f9ff;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 0 0 1rem 0;
+        }
+        .module-description {
+            font-style: italic;
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+        .function {
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            background: #fafbfc;
+        }
+        .function h4 {
+            margin: 0 0 1rem 0;
+            color: #333;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: #f1f3f4;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+        .function-description {
+            margin-bottom: 1rem;
+        }
+        .parameters {
+            margin-bottom: 1rem;
+        }
+        .parameters h5, .returns h5 {
+            margin: 0 0 0.5rem 0;
+            color: #555;
+        }
+        .parameter {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        .parameter-name {
+            font-weight: bold;
+            color: #667eea;
+        }
+        .parameter-type {
+            color: #764ba2;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .returns {
+            background: #f0f8f0;
+            border: 1px solid #d4edda;
+            border-radius: 4px;
+            padding: 0.75rem;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            margin-top: 3rem;
+            padding: 2rem;
+            border-top: 1px solid #ddd;
+        }
+        code {
+            background: #f1f3f4;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>LwM2M Gateway API Documentation</h1>
+        <div class="version">Version 0.1.2</div>
+    </div>
+
+    <div class="toc">
+        <h2>Table of Contents</h2>
+        <ul>
+            <li><a href="#server">Server API</a>
+                <ul>
+                    <li><a href="#server-bootstrap">bootstrap</a></li><li><a href="#server-handleBootstrap">handleBootstrap</a></li><li><a href="#server-resourceClient">resourceClient</a></li><li><a href="#server-clientRegistry">clientRegistry</a></li><li><a href="#server-observationRegistry">observationRegistry</a></li><li><a href="#server-sharedEmitter">sharedEmitter</a></li>
+                </ul>
+            </li>
+            <li><a href="#client">Client API</a>
+                <ul>
+                    <li><a href="#client-resourceServer">resourceServer</a></li><li><a href="#client-registration">registration</a></li><li><a href="#client-logger">logger</a></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <div class="section" id="server">
+        <h2>Server API</h2>
+        <p>The server API provides functionality for running LwM2M servers, managing client connections, and handling resource operations.</p>
+        
+        
+            <div class="module" id="server-bootstrap">
+                <h3>bootstrap</h3>
+                <div class="module-description">LwM2M Bootstrap Server for device provisioning and initial configuration</div>
+                
+                
+                    <div class="function">
+                        <h4>startBootstrapServer(bootstrapDeviceCall = null, port = 5783)</h4>
+                        <div class="function-description">Starts the LwM2M Bootstrap Server</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">bootstrapDeviceCall</span>
+                                        <span class="parameter-type">(function|null)</span>
+                                        - Optional callback for custom bootstrap handling
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">port</span>
+                                        <span class="parameter-type">(number)</span>
+                                        - Port to listen on (default: 5783)
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">object</span> - CoAP server instance
+                        </div>
+                    </div>
+                
+            </div>
+        
+            <div class="module" id="server-handleBootstrap">
+                <h3>handleBootstrap</h3>
+                <div class="module-description">Bootstrap request handling and device configuration management</div>
+                
+                
+                    <div class="function">
+                        <h4>handleBootstrapRequest(req, res, bootstrapDeviceCall)</h4>
+                        <div class="function-description">Processes bootstrap requests from LwM2M clients</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">req</span>
+                                        <span class="parameter-type">(object)</span>
+                                        - CoAP request object
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">res</span>
+                                        <span class="parameter-type">(object)</span>
+                                        - CoAP response object
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">bootstrapDeviceCall</span>
+                                        <span class="parameter-type">(function)</span>
+                                        - Custom bootstrap handler
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">Promise<object></span> - Promise resolving to { ep }
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>handleBootstrapFinish(req, res)</h4>
+                        <div class="function-description">Handles bootstrap finish notifications</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">req</span>
+                                        <span class="parameter-type">(object)</span>
+                                        - CoAP request object
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">res</span>
+                                        <span class="parameter-type">(object)</span>
+                                        - CoAP response object
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">Promise<object></span> - Promise resolving to { ep }
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>setBootstrapConfiguration(ep, config)</h4>
+                        <div class="function-description">Sets bootstrap configuration for a specific endpoint</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">ep</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Endpoint name
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">config</span>
+                                        <span class="parameter-type">(object)</span>
+                                        - Bootstrap configuration object
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">void</span> - No return value
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>getBootstrapConfiguration(ep)</h4>
+                        <div class="function-description">Gets bootstrap configuration for an endpoint</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">ep</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Endpoint name
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">object</span> - Bootstrap configuration object
+                        </div>
+                    </div>
+                
+            </div>
+        
+            <div class="module" id="server-resourceClient">
+                <h3>resourceClient</h3>
+                <div class="module-description">Client management and resource operations for LwM2M server</div>
+                
+                
+                    <div class="function">
+                        <h4>startLwM2MCoapServer(validation, port, options = {})</h4>
+                        <div class="function-description">Starts LwM2M CoAP server for client communication</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">validation</span>
+                                        <span class="parameter-type">(function)</span>
+                                        - Client validation function
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">port</span>
+                                        <span class="parameter-type">(number)</span>
+                                        - Port to listen on
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">options</span>
+                                        <span class="parameter-type">(object)</span>
+                                        - Server configuration options
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">object</span> - CoAP server instance
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>startLwM2MDTLSCoapServer(validation, port, options = {})</h4>
+                        <div class="function-description">Starts LwM2M DTLS CoAP server for secure communication</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">validation</span>
+                                        <span class="parameter-type">(function)</span>
+                                        - Client validation function
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">port</span>
+                                        <span class="parameter-type">(number)</span>
+                                        - Port to listen on
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">options</span>
+                                        <span class="parameter-type">(object)</span>
+                                        - DTLS server configuration options
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">object</span> - DTLS server instance
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>discoveryRequest(ep)</h4>
+                        <div class="function-description">Sends discovery request to client to enumerate resources</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">ep</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Endpoint name
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">Promise<object></span> - Promise resolving to discovery response
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>getRequest(ep, path, format = "text")</h4>
+                        <div class="function-description">Sends GET request to client resource</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">ep</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Endpoint name
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">path</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Resource path (e.g., "/3/0/0")
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">format</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Response format (text, json, cbor, tlv)
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">Promise<object></span> - Promise resolving to resource value
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>startObserveRequest(ep, path, format = "text")</h4>
+                        <div class="function-description">Starts observing a client resource for changes</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">ep</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Endpoint name
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">path</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Resource path to observe
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">format</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Notification format
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">Promise<object></span> - Promise resolving to observation setup
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>stopObserveRequest(ep, path)</h4>
+                        <div class="function-description">Stops observing a client resource</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">ep</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Endpoint name
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">path</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Resource path to stop observing
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">Promise<object></span> - Promise resolving to stop confirmation
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>putRequest(ep, path, payload, format = "text")</h4>
+                        <div class="function-description">Sends PUT request to update client resource</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">ep</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Endpoint name
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">path</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Resource path to update
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">payload</span>
+                                        <span class="parameter-type">(any)</span>
+                                        - New resource value
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">format</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Payload format
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">Promise<object></span> - Promise resolving to update response
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>postRequest(ep, path, payload, format = "text")</h4>
+                        <div class="function-description">Sends POST request to execute resource or create instance</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">ep</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Endpoint name
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">path</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Resource path
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">payload</span>
+                                        <span class="parameter-type">(any)</span>
+                                        - Request payload
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">format</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Payload format
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">Promise<object></span> - Promise resolving to execution response
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>deleteRequest(ep, path)</h4>
+                        <div class="function-description">Sends DELETE request to remove resource instance</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">ep</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Endpoint name
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">path</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Resource path to delete
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">Promise<object></span> - Promise resolving to deletion response
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>createRequest(ep, parentPath, payload, format = "text")</h4>
+                        <div class="function-description">Creates new object instance</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">ep</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Endpoint name
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">parentPath</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Parent object path
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">payload</span>
+                                        <span class="parameter-type">(any)</span>
+                                        - Instance data
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">format</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Payload format
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">Promise<object></span> - Promise resolving to creation response
+                        </div>
+                    </div>
+                
+            </div>
+        
+            <div class="module" id="server-clientRegistry">
+                <h3>clientRegistry</h3>
+                <div class="module-description">Client registration and session management</div>
+                
+                
+                    <div class="function">
+                        <h4>registerClient(ep, info)</h4>
+                        <div class="function-description">Registers a new LwM2M client</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">ep</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Endpoint name
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">info</span>
+                                        <span class="parameter-type">(object)</span>
+                                        - Client information object
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">void</span> - No return value
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>getClient(ep)</h4>
+                        <div class="function-description">Retrieves client information by endpoint</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">ep</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Endpoint name
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">object|null</span> - Client information or null if not found
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>listClients()</h4>
+                        <div class="function-description">Returns list of all registered clients</div>
+                        
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">Array<object></span> - Array of client information objects
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>deregisterClient(ep)</h4>
+                        <div class="function-description">Removes client from registry</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">ep</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Endpoint name
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">boolean</span> - True if client was removed
+                        </div>
+                    </div>
+                
+            </div>
+        
+            <div class="module" id="server-observationRegistry">
+                <h3>observationRegistry</h3>
+                <div class="module-description">Resource observation management</div>
+                
+                
+                    <div class="function">
+                        <h4>registerObservation(ep, path, token, socket)</h4>
+                        <div class="function-description">Registers a new resource observation</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">ep</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Endpoint name
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">path</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Resource path
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">token</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Observation token
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">socket</span>
+                                        <span class="parameter-type">(object)</span>
+                                        - Socket for notifications
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">void</span> - No return value
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>getObservation(ep, path)</h4>
+                        <div class="function-description">Gets observation details for a resource</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">ep</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Endpoint name
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">path</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Resource path
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">object|null</span> - Observation details or null
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>deregisterObservation(ep, path)</h4>
+                        <div class="function-description">Removes resource observation</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">ep</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Endpoint name
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">path</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Resource path
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">boolean</span> - True if observation was removed
+                        </div>
+                    </div>
+                
+            </div>
+        
+            <div class="module" id="server-sharedEmitter">
+                <h3>sharedEmitter</h3>
+                <div class="module-description">Shared EventEmitter for server-wide events</div>
+                
+                
+                    <div class="function">
+                        <h4>emit(event, ...args)</h4>
+                        <div class="function-description">Emits an event to all listeners</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">event</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Event name
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">...args</span>
+                                        <span class="parameter-type">(any)</span>
+                                        - Event arguments
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">boolean</span> - True if event had listeners
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>on(event, listener)</h4>
+                        <div class="function-description">Adds event listener</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">event</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Event name
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">listener</span>
+                                        <span class="parameter-type">(function)</span>
+                                        - Event listener function
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">EventEmitter</span> - EventEmitter instance for chaining
+                        </div>
+                    </div>
+                
+            </div>
+        
+    </div>
+
+    <div class="section" id="client">
+        <h2>Client API</h2>
+        <p>The client API provides functionality for implementing LwM2M clients that can register with servers and expose resources.</p>
+        
+        
+            <div class="module" id="client-resourceServer">
+                <h3>resourceServer</h3>
+                <div class="module-description">LwM2M client resource server implementation</div>
+                
+                
+                    <div class="function">
+                        <h4>startResourceServer(port)</h4>
+                        <div class="function-description">Starts the LwM2M client resource server</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">port</span>
+                                        <span class="parameter-type">(number)</span>
+                                        - Port to listen on
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">object</span> - CoAP server instance
+                        </div>
+                    </div>
+                
+            </div>
+        
+            <div class="module" id="client-registration">
+                <h3>registration</h3>
+                <div class="module-description">LwM2M client registration management</div>
+                
+                
+                    <div class="function">
+                        <h4>registerToServer(endpointName, serverHost, serverPort, localPort = 5683, timeoutMs = 1000, protocol = "coap")</h4>
+                        <div class="function-description">Registers client with LwM2M server</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">endpointName</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Client endpoint name
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">serverHost</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Server hostname or IP
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">serverPort</span>
+                                        <span class="parameter-type">(number)</span>
+                                        - Server port
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">localPort</span>
+                                        <span class="parameter-type">(number)</span>
+                                        - Local client port (default: 5683)
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">timeoutMs</span>
+                                        <span class="parameter-type">(number)</span>
+                                        - Request timeout in milliseconds (default: 1000)
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">protocol</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Protocol to use: "coap" or "coaps" (default: "coap")
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">Promise<void></span> - Promise that resolves when registration is complete
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>updateRegistration(host, port, protocol = "coap")</h4>
+                        <div class="function-description">Sends registration update to server</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">host</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Server hostname or IP
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">port</span>
+                                        <span class="parameter-type">(number)</span>
+                                        - Server port
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">protocol</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Protocol to use (default: "coap")
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">Promise<void></span> - Promise that resolves when update is complete
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>deregister(host, port, protocol = "coap")</h4>
+                        <div class="function-description">Deregisters client from server</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">host</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Server hostname or IP
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">port</span>
+                                        <span class="parameter-type">(number)</span>
+                                        - Server port
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">protocol</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Protocol to use (default: "coap")
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">Promise<void></span> - Promise that resolves when deregistration is complete
+                        </div>
+                    </div>
+                
+            </div>
+        
+            <div class="module" id="client-logger">
+                <h3>logger</h3>
+                <div class="module-description">Pino logger instance for client operations</div>
+                
+                
+                    <div class="function">
+                        <h4>debug(message, ...args)</h4>
+                        <div class="function-description">Logs debug message</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">message</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Log message
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">...args</span>
+                                        <span class="parameter-type">(any)</span>
+                                        - Additional arguments
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">void</span> - No return value
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>info(message, ...args)</h4>
+                        <div class="function-description">Logs info message</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">message</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Log message
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">...args</span>
+                                        <span class="parameter-type">(any)</span>
+                                        - Additional arguments
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">void</span> - No return value
+                        </div>
+                    </div>
+                
+                    <div class="function">
+                        <h4>error(message, ...args)</h4>
+                        <div class="function-description">Logs error message</div>
+                        
+                        
+                            <div class="parameters">
+                                <h5>Parameters:</h5>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">message</span>
+                                        <span class="parameter-type">(string)</span>
+                                        - Log message
+                                    </div>
+                                
+                                    <div class="parameter">
+                                        <span class="parameter-name">...args</span>
+                                        <span class="parameter-type">(any)</span>
+                                        - Additional arguments
+                                    </div>
+                                
+                            </div>
+                        
+                        
+                        <div class="returns">
+                            <h5>Returns:</h5>
+                            <span class="parameter-type">void</span> - No return value
+                        </div>
+                    </div>
+                
+            </div>
+        
+    </div>
+
+    <div class="footer">
+        <p>Generated automatically from <code>index.js</code> exports</p>
+        <p>LwM2M Gateway v0.1.2 - <a href="https://github.com/zimbora/lwm2m-gw">GitHub Repository</a></p>
+    </div>
+</body>
+</html>

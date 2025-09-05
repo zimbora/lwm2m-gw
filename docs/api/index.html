@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LwM2M Gateway Documentation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fafafa;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .versions {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .version-link {
+            display: block;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: #f8f9ff;
+            border: 1px solid #e1e5e9;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #667eea;
+            transition: all 0.2s;
+        }
+        .version-link:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .latest {
+            background: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .latest:hover {
+            background: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>LwM2M Gateway Documentation</h1>
+        <p>Choose a version to view the API documentation</p>
+    </div>
+    
+    <div class="versions">
+        <h2>Available Versions</h2>
+        <a href="latest/" class="version-link latest">
+            <strong>Latest (v0.1.2)</strong>
+        </a>
+        
+            <a href="0.1.2/" class="version-link">
+                Version 0.1.2
+            </a>
+        
+    </div>
+</body>
+</html>
