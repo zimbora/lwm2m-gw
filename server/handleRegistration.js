@@ -33,11 +33,12 @@ function handleRegister(req, res, protocol, validRegistration) {
 
       registerClient(ep, {
         address: req.rsinfo.address,
-        port: port || 5683,
+        port: port, // Don't default to 5683 if no port provided - use socket instead
         protocol,
         location,
         lifetime: lifetime,
         binding,
+        socket: req._sock || req.socket, // Store the socket for future communication
       });
 
       res.code = '2.01';

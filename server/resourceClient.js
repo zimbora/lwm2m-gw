@@ -4,7 +4,7 @@ const coapPacket = require('coap-packet');
 const dtls = require('node-mbedtls-server');
 
 const sharedEmitter = require('./transport/sharedEmitter');
-const { sendCoapRequest } = require('./transport/coapClient');
+const { sendCoapRequest, sendCoapRequestViaSocket } = require('./transport/coapClient');
 const { sendDTLSCoapRequest } = require('./transport/coapClientDTLS');
 const { connectMqttClient, sendMqttRequest } = require('./transport/mqttClient');
 const { handleRegister, handleUpdate, handleDeregister} = require('./handleRegistration');
@@ -175,7 +175,8 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
             method: method,
             payload: packet.payload,
             headers: {},
-            _packet: packet
+            _packet: packet,
+            socket: socket // Add socket reference for DTLS
           };
           
           // Convert packet options to headers for compatibility
@@ -439,10 +440,15 @@ function dispatchRequest(ep, method, path, payload = null, options = {}) {
     }
   }
 
-  // Dispatch request based on protocol
+  // Dispatch request based on protocol and available connection options
   let requestPromise;
   if (coapEnabled && client.protocol === 'coap') {
-    requestPromise = sendCoapRequest(client, method, path, payload, '', options);
+    // If client has no port but has a socket, use socket-based communication
+    if (!client.port && client.socket && !client.socket.destroyed) {
+      requestPromise = sendCoapRequestViaSocket(client.socket, method, path, payload, '', options);
+    } else {
+      requestPromise = sendCoapRequest(client, method, path, payload, '', options);
+    }
   } else if (coapEnabled && client.protocol === 'coaps') {
     requestPromise = sendDTLSCoapRequest(client, method, path, payload, '', options);
   } else if (mqttEnabled && client.protocol === 'mqtt') {

@@ -21,6 +21,12 @@ function sendDTLSCoapRequest(client, method, path, payload = null, query = '', o
       return reject(new Error('Invalid client: address is required'));
     }
 
+    // If client has no port but has a socket, we can still communicate
+    // This handles the case where the device connected to us but doesn't have an open UDP port
+    if (!client.port && !client.socket) {
+      return reject(new Error('Client has no port and no socket - cannot reach device'));
+    }
+
     let token = null
 
     // Map method to CoAP code
@@ -64,6 +70,10 @@ function sendDTLSCoapRequest(client, method, path, payload = null, query = '', o
         reject(error)
       }
     }else{
+      // If no port is provided, we cannot create a new DTLS connection
+      if (!client.port) {
+        return reject(new Error('Cannot create new DTLS connection - client has no port and no existing socket'));
+      }
 
       socket = dtls.createSocket({
         type: "udp4",
