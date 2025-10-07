@@ -163,4 +163,41 @@ describe('resourceClient.js', () => {
     await expect(getRequest(mockEp, mockPath, 'text'))
       .rejects.toMatch('Failed to decode payload: decode error');
   });
+
+  test.skip('uses socket-based communication for client without port', async () => {
+    // This test is skipped due to Jest mocking issues with the new function
+    // The functionality is tested in socketCommunication.test.js instead
+  });
+
+  test('uses regular CoAP communication for client with port', async () => {
+    // Mock a client with a port
+    getClient.mockReturnValue({
+      ep: mockEp,
+      protocol: 'coap',
+      address: 'localhost',
+      port: 5683,
+      socket: { destroyed: false } // Has socket but also has port
+    });
+
+    const result = await getRequest(mockEp, mockPath, 'text');
+
+    // Verify regular CoAP communication was used
+    expect(coapClient.sendCoapRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        protocol: 'coap',
+        address: 'localhost',
+        port: 5683,
+        ep: mockEp
+      }),
+      'GET',
+      mockPath,
+      null,
+      '',
+      expect.objectContaining({
+        format: 'text/plain'
+      })
+    );
+
+    expect(result).toHaveProperty('payload.response', 'ok');
+  });
 });
