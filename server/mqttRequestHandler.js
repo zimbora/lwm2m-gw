@@ -162,7 +162,7 @@ class MqttRequestHandler {
   /**
    * Publish response back to MQTT
    */
-  async publishResponse(endpoint, method, path, response) {
+  async publishResponse(endpoint, method, path, data) {
     if (!this.client) {
       console.warn('[MQTT Request Handler] No MQTT client available for response');
       return;
@@ -170,11 +170,7 @@ class MqttRequestHandler {
 
     const responseTopic = `${this.config.project}/responses/${endpoint}/${method}${path}`;
     const responsePayload = {
-      timestamp: Date.now(),
-      endpoint: endpoint,
-      method: method,
-      path: path,
-      data: response
+      data
     };
 
     try {

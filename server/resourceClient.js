@@ -12,6 +12,9 @@ const { handleRegister, handleUpdate, handleDeregister} = require('./handleRegis
 const { registerObservation, getObservation, deregisterObservation, findTokenByEpAndPath } = require('./observationRegistry');
 const PayloadCodec = require('../utils/payloadCodec');
 const CONTENT_FORMATS = require('../utils/contentFormats');
+const MessageStore = require('./transport/MessageStore');
+
+$.msgStore = new MessageStore();
 
 const { 
   getClient,
@@ -187,7 +190,7 @@ function dispatchRequest(ep, method, path, payload = null, options = {}) {
   let requestPromise;
   if (coapEnabled && client.protocol === 'coap') {
     requestPromise = sendCoapRequest(client, method, path, payload, '', options);
-  } else if (coapEnabled && client.protocol === 'coaps') {
+  } else if (coapEnabled && client.protocol === 'dtls') {
     requestPromise = sendDTLSCoapRequest(client, method, path, payload, '', options);
   } else if (mqttEnabled && client.protocol === 'mqtt') {
     requestPromise = sendMqttRequest(client, method, path, payload, options);
@@ -321,7 +324,7 @@ function parseReceivedData(socket,protocol,data,validation,address=null,port=nul
   const uriQueryParts = packet.options
   .filter(opt => opt.name === 'Uri-Query')
   .map(opt => opt.value.toString('utf8'));
-
+  const token = Buffer.from(packet.token).toString('hex');
   const query = uriQueryParts.length ? '?' + uriQueryParts.join('&') : '';
 
   const method = {
@@ -450,14 +453,28 @@ function parseReceivedData(socket,protocol,data,validation,address=null,port=nul
   }
 
   if(response === true){
-    parseResponse(req,protocol,null,method,path,packet.code);
+    const msgSent = $.msgStore.get(token);
+    if(msgSent){
+      parseResponse(
+        req,
+        protocol,
+        msgSent.ep,
+        msgSent.method,
+        msgSent.path,
+        packet.code,
+        msgSent.format
+      );
+      $.msgStore.delete(token);
+    }else{
+      console.log(`msg associated wiwth token: ${token} not found`);
+    }
   }else if(request === true){
     createResponse(req,res,validation,protocol,method,path)
   }
 
 }
 
-function parseResponse(req,protocol,ep,method,path,code){
+function parseResponse(req,protocol,ep,method,path,code,format){
 
   // Update client activity when we receive a response
   // find ep
@@ -469,19 +486,18 @@ function parseResponse(req,protocol,ep,method,path,code){
   console.log("path:",path);
   console.log("code",code);
 
-  let format = req.headers['Content-Format'] || 0 ;
-  let formatInt = 0;
-  if(Buffer.isBuffer(format)){
-    if (format.length >= 2) {
-      formatInt = format.readUInt16BE(0);
-    } else if (format.length === 1) {
-      formatInt = format.readUInt8(0);
-    } else {
-      formatInt = 0;
+  let formatStr = req.headers['Content-Format'];
+  let formatInt = -1;
+  if(formatStr){
+    if(Buffer.isBuffer(formatStr)){
+      if (formatStr.length >= 2) {
+        formatInt = formatStr.readUInt16BE(0);
+      } else if (formatStr.length === 1) {
+        formatInt = formatStr.readUInt8(0);
+      }
     }
   }
-  format = formatInt ? formatInt : format;
-  console.log("format:",format);
+  format = formatInt > -1 ? formatInt : format; // use format sent
 
   try {
     decodedPayload = PayloadCodec.decode(req.payload,CONTENT_FORMATS[format])

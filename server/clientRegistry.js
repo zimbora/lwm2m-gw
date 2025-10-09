@@ -4,6 +4,7 @@ function registerClient(ep, info) {
   const now = Date.now();
   const clientInfo = {
     ...info,
+    ep,
     lastActivity: now,
     registeredAt: now,
     offline: false,

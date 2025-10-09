@@ -97,6 +97,12 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
 */
 function sendCoapRequest(client, method, path, payload = null, query = '', options = {}) {
   
+  method = method.toUpperCase();
+  if(options?.timeout)
+    options.timeout = 30000;
+  if(options?.format)
+    options.format = 0;
+
   console.log(`send request ${method} ${path}`);
   return new Promise((resolve, reject) => {
     if (!client || !client.address) {
@@ -107,7 +113,7 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
 
     // Map method to CoAP code
     const methodMap = { GET: '0.01', POST: '0.02', PUT: '0.03', DELETE: '0.04' };
-    const code = methodMap[method.toUpperCase()] || '0.01';
+    const code = methodMap[method] || '0.01';
 
     // Build CoAP options
     const coapOptions = [
@@ -122,8 +128,8 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
     
     if (options.observe !== undefined) {
       coapOptions.push({ name: 'Observe', value: Buffer.from([options.observe]) });
-      token = crypto.randomBytes(8);
     }
+    token = crypto.randomBytes(8);
 
     const coapReq = coapPacket.generate({
       confirmable: options?.confirmable !== false,
@@ -146,6 +152,15 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
             if(err){
               console.log(`[COAP Server] coap error error requesting from: ${address}:${port}`);
               console.error(err);
+            }else{
+              $.msgStore.add(Buffer.from(token).toString('hex'), {
+                method,
+                path,
+                ep: client.ep,
+                timeout: options.timeout,
+                msgId: client.msgId,
+                format: options.format,
+              });
             }  
           });
         }catch(err){
@@ -164,13 +179,12 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
         
         try{
           socket.send(coapReq, client.address, client.port);
-
         }catch(error){
           console.log(error)
           reject(error)
         }
       }else{
-
+        /*
         socket = dtls.createSocket({
           type: "udp4",
           address: client.address,
@@ -186,7 +200,7 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
             return reject(err);
           }
         });
-
+        */
       }
 
       // increase time for authentication
@@ -197,7 +211,7 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
           socket.close();
         } catch(err) {}
         reject(error);
-      }, options.timeout || 5000);
+      }, options.timeout || 30000);
 
       socket.on("message", (msg) => {
         clearTimeout(timeout);
