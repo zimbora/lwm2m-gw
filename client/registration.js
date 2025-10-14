@@ -4,8 +4,17 @@ const { getSocket } = require('./resourceServer');
 const { sendDTLSCoapRequest } = require('./transport/dtlsServer');
 
 let registrationLocation = null;
+let agent = null;
 
-function registerToServer(endpointName, serverHost, serverPort, localPort = 5683, timeoutMs = 1000, protocol = 'coap') {
+/*
+!!
+update registration and deregister cannot share same agent than registration 
+coap lib limitation doesn't allow a client and a server share the same socket
+Change coap lib by dsockudp 
+!!
+*/
+
+function registerToServer(endpointName, serverHost, serverPort, localPort, timeoutMs = 1000, protocol = 'coap') {
   $.logger.debug(`Register on server: ${serverHost}:${serverPort}`)
   return new Promise((resolve, reject) => {
     if (protocol === 'coaps') {
@@ -35,13 +44,27 @@ function registerToServer(endpointName, serverHost, serverPort, localPort = 5683
         return resolve();
       });
     }else{
-      const agent = new coap.Agent(); // share server socket
+      let query = "";
+      
+      //query = `ep=${endpointName}&lt=300&b=U&port=${localPort}` // set a different local port
+      query = `ep=${endpointName}&lt=300&b=U` // force server to use port of request
+      
+      if (agent?._sock) {
+        agent._sock.close();
+      }
+
+      if(localPort)
+        agent = new coap.Agent({ type: 'udp4', port:localPort}); // share server socket
+      else
+        agent = new coap.Agent({ type: 'udp4'}); // share server socket      
+
       const req = coap.request({
         hostname: serverHost,
         port: serverPort,
         pathname: '/rd',
         method: 'POST',
-        query: `ep=${endpointName}&lt=300&b=U&port=${localPort}`,
+        retrySend: false,
+        query,
         agent
       });
 
@@ -71,7 +94,7 @@ function registerToServer(endpointName, serverHost, serverPort, localPort = 5683
 
         registrationLocation = `/` + path;
         $.logger.info(`[Client] Registered with server. Location: ${path}`);
-        resolve();
+        resolve(res.outSocket.port);
       });
 
       req.on('error', (err)=>{
@@ -120,6 +143,7 @@ function updateRegistration(host, port = 5683, timeoutMs = 300, protocol = 'coap
         method: 'PUT',
         pathname: registrationLocation,
         confirmable: true,
+        retrySend: false
       });
 
       let timeout = setTimeout(() => {
@@ -185,6 +209,7 @@ function deregister(host, port = 5683, timeoutMs = 300, protocol) {
         method: 'DELETE',
         pathname: registrationLocation,
         confirmable: true,
+        retrySend: false
       });
 
       req.on('response', (res) => {

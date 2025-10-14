@@ -2,6 +2,7 @@
 
 const {
   createServer,
+  closeServer,
   sendNotification,
   stopObservation,
   getObservers,
@@ -31,11 +32,13 @@ const {
   handleProvisionCompleted
 } = require('./routes');
 
+let server = null;
 
 function startResourceServer(port = 56830) {
   const observers = getObservers();
 
-  const server = createServer((req, res) => {
+  server = createServer((req, res) => {
+    
     if (req.method === 'GET' && req.url === '/.well-known/core') {
       return handleDiscoveryRequest(res);
     }
@@ -79,4 +82,8 @@ function startResourceServer(port = 56830) {
   return server;
 }
 
-module.exports = { startResourceServer };
+function closeResourceServer(){
+  closeServer();
+}
+
+module.exports = { startResourceServer, closeResourceServer };

@@ -2,7 +2,7 @@
 
 const coap = require('coap');
 
-let server;
+let server = null;
 let observers = {}; // key: path, value: array of observer objects
 
 function createServer(handler, port = 56830) {
@@ -11,6 +11,16 @@ function createServer(handler, port = 56830) {
     $.logger.info(`[Client] Resource server with Observe support on port ${port}`);
   });
   return server;
+}
+
+function closeServer(){
+  
+  if(server != null){
+    server.close(() => {
+      $.logger.info('CoAP server closed');
+      server = null;
+    });
+  }
 }
 
 // Notifications are being sent to server lwm2m default port
@@ -53,6 +63,7 @@ function getServer() {
 
 module.exports = {
   createServer,
+  closeServer,
   sendNotification,
   stopObservation,
   getObservers,
