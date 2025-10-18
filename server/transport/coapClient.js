@@ -103,22 +103,34 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
   if(options?.format)
     options.format = 0;
 
-  console.log(`send request ${method} ${path}`);
+
   return new Promise((resolve, reject) => {
     if (!client || !client.address) {
       return reject(new Error('Invalid client: address is required'));
     }
 
-    let token = null
+    const token = options?.token ? Buffer.from(options.token,'hex') : crypto.randomBytes(8);
+    console.log("token",token)
 
     // Map method to CoAP code
     const methodMap = { GET: '0.01', POST: '0.02', PUT: '0.03', DELETE: '0.04' };
     const code = methodMap[method] || '0.01';
 
     // Build CoAP options
+    const coapOptions = [];
+    
+    // Uri-Path segmentation
+    const cleaned = path.replace(/^\/+|\/+$/g, '');
+    if (cleaned.length) {
+      cleaned.split('/').filter(Boolean).forEach(segment => {
+        coapOptions.push({ name: 'Uri-Path', value: Buffer.from(segment) });
+      });
+    }
+    /*
     const coapOptions = [
       { name: 'Uri-Path', value: Buffer.from(path) }
     ];
+    */
     if (query) {
       coapOptions.push({ name: 'Uri-Query', value: Buffer.from(query) });
     }
@@ -129,12 +141,11 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
     if (options.observe !== undefined) {
       coapOptions.push({ name: 'Observe', value: Buffer.from([options.observe]) });
     }
-    token = crypto.randomBytes(8);
 
     const coapReq = coapPacket.generate({
       confirmable: options?.confirmable !== false,
       messageId: client.msgId++,
-      token: token ? Buffer.from(token,'hex') : Buffer.alloc(0),
+      token: token ? token : Buffer.alloc(0),
       code,
       options: coapOptions,
       payload: payload ? Buffer.from(payload) : Buffer.alloc(0)
@@ -142,24 +153,35 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
 
     let socket = null;
 
-    console.log(client);
-
     if($.coapSocket){
       try{
+
+        console.log(`send request to ${client.address}:${client.port} 
+          ep: ${client.ep}
+          msgId: ${coapReq.messageId}
+          method: ${method} 
+          path: ${path} 
+          observe: ${options.observe}
+          format: ${options.format}
+          token: ${token.toString('hex')}
+        `);
+
         console.log("Reusing socket opened by client");
         try{
+          //console.log(client.address,client.port,coapReq); // send it to logger
           $.coapSocket.send(coapReq, client.port, client.address,(err)=>{
             if(err){
               console.log(`[COAP Server] coap error error requesting from: ${address}:${port}`);
               console.error(err);
             }else{
-              $.msgStore.add(Buffer.from(token).toString('hex'), {
+              $.msgStore.add(token.toString('hex'), {
                 method,
                 path,
                 ep: client.ep,
                 timeout: options.timeout,
                 msgId: client.msgId,
                 format: options.format,
+                observe: options?.observe
               });
             }  
           });
