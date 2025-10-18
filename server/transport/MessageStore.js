@@ -10,7 +10,7 @@ class MessageStore {
    * @param {string} token - Unique token
    * @param {Object} data - { method, path, ep, timeout, format }
    */
-  add(token, { method, path, ep, timeout, msgId, format }) {
+  add(token, { method, path, ep, timeout, msgId, format, observe }) {
     const now = Date.now();
     this.messages.set(token, {
       method,
@@ -19,6 +19,7 @@ class MessageStore {
       timeout: timeout ?? this.timeoutMs,
       msgId,
       format,
+      observe,
       added: now,
     });
   }

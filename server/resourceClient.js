@@ -254,9 +254,12 @@ function startObserveRequest(ep, path, observe = 0, format = 'text') {
   return dispatchRequest(ep, 'GET', path, null, { observe, format: CONTENT_FORMATS[format] })
     .then(({ token, code, socket }) => {
       try {
+        // coapClient doesn't have callback right now
+        // parseReceivedData func is called instead
+
         // Register the observation in the registry, including the socket for cleanup
         registerObservation(token, ep, path, format, socket);
-        sharedEmitter.emit('startObservation', { ep, token, path });
+        sharedEmitter.emit('startObservation', { ep, token: token.toString('hex'), path });
         return { token, ep, path, format};
       } catch (error) {
         throw new Error(`Register observation error: ${error.message}`);
@@ -270,14 +273,15 @@ function startObserveRequest(ep, path, observe = 0, format = 'text') {
 }
 
 function stopObserveRequest(ep, path, observe = 1, format = 'text') {
-  return dispatchRequest(ep, 'GET', path, null, { observe, format: CONTENT_FORMATS[format] })
+  const token = findTokenByEpAndPath(ep,path)
+  return dispatchRequest(ep, 'GET', path, null, { observe, format: CONTENT_FORMATS[format], token})
   .then( ({token}) => {
     try{
       if(!token){
         token = findTokenByEpAndPath(ep, path)
       }
       deregisterObservation(token);
-      sharedEmitter.emit('stopObservation', { ep, token, path });
+      sharedEmitter.emit('stopObservation', { ep, token : token.toString('hex'), path });
       return { token, ep, path, format};
     }catch(error){
       throw new Error(`Deregister error: ${error}`);
@@ -311,7 +315,7 @@ function parseReceivedData(socket,protocol,data,validation,address=null,port=nul
   let response = false;
   let request = false;
 
-  console.log(packet);
+  //console.log(packet);
 
   const uriHost = packet.options.find(option => option.name === 'Uri-Host');
   const uriPath = packet.options
@@ -432,7 +436,7 @@ function parseReceivedData(socket,protocol,data,validation,address=null,port=nul
 
   switch (packet.code[0]) {
     case '0':
-      console.log("Client request: ${protocol} ${method} ${path}.")
+      console.log(`Client request: ${protocol} ${method} ${path}.`)
       request = true;
       break;
     case '2':
@@ -459,14 +463,16 @@ function parseReceivedData(socket,protocol,data,validation,address=null,port=nul
         req,
         protocol,
         msgSent.ep,
+        msgSent.msgId,
         msgSent.method,
         msgSent.path,
         packet.code,
-        msgSent.format
+        msgSent.format,
+        msgSent.observe
       );
       $.msgStore.delete(token);
     }else{
-      console.log(`msg associated wiwth token: ${token} not found`);
+      console.log(`msg associated with token: ${token} not found`);
     }
   }else if(request === true){
     createResponse(req,res,validation,protocol,method,path)
@@ -474,17 +480,12 @@ function parseReceivedData(socket,protocol,data,validation,address=null,port=nul
 
 }
 
-function parseResponse(req,protocol,ep,method,path,code,format){
+function parseResponse(req,protocol,ep,msgId,method,path,code,format,observe=null){
 
   // Update client activity when we receive a response
   // find ep
   //updateClientActivity(ep);
   console.log(req);
-  console.log("protocol:",protocol);
-  console.log("ep:",ep);
-  console.log("method",method);
-  console.log("path:",path);
-  console.log("code",code);
 
   let formatStr = req.headers['Content-Format'];
   let formatInt = -1;
@@ -508,7 +509,45 @@ function parseResponse(req,protocol,ep,method,path,code,format){
   let options = {
     format: CONTENT_FORMATS[format]
   }
-  console.log(decodedPayload);
+
+  let token = null;
+  if(req._packet?.token.length > 0)
+    token = Buffer.from(req._packet.token,'hex')
+
+  console.log(`response rcv ${req.rsinfo.address}:${req.rsinfo.port} 
+    ep: ${ep}
+    msgId: ${msgId}
+    method: ${method} 
+    path: ${path} 
+    observe: ${observe} 
+    format: ${format}
+    token: ${token.toString('hex')}
+    payload: ${JSON.stringify(decodedPayload)}
+  `);
+
+  // if response observe == 0 - observe start
+  // if response observe == 1 and token = registered token - observe stop
+  if(observe == 0){
+    // payload is the actual vale of path
+    sharedEmitter.emit('response', 
+    { 
+      protocol: protocol,
+      ep, 
+      method, 
+      path, 
+      payload : decodedPayload, 
+      options,
+      code
+    });
+    method = 'OBSERVE';
+    decodedPayload = "Observation started"
+    registerObservation(token, ep, path, format);
+    sharedEmitter.emit('startObservation', { ep, token:token.toString('hex'), path });
+  }else if(observe == 1){
+    method = 'CANCEL-OBSERVE';
+    deregisterObservation(token, ep, path, format);
+    sharedEmitter.emit('stopObservation', { ep, token:token.toString('hex'), path });
+  }
 
   sharedEmitter.emit('response', 
   { 
@@ -520,6 +559,8 @@ function parseResponse(req,protocol,ep,method,path,code,format){
     options,
     code
   });
+
+
 }
 
 function createResponse(req,res,validation,protocol,method,path){
