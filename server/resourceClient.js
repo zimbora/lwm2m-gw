@@ -310,12 +310,18 @@ function createRequest(ep, parentPath, payload, format = 'text') {
 }
 
 function parseReceivedData(socket,protocol,data,validation,address=null,port=null){
-  const packet = coapPacket.parse(data);
+  
+  let packet = null;
+  try{
+    packet = coapPacket.parse(data);
+  }catch(err){
+    console.log(packet);
+    console.log(err)
+    return;
+  }
 
   let response = false;
   let request = false;
-
-  //console.log(packet);
 
   const uriHost = packet.options.find(option => option.name === 'Uri-Host');
   const uriPath = packet.options
@@ -485,7 +491,6 @@ function parseResponse(req,protocol,ep,msgId,method,path,code,format,observe=nul
   // Update client activity when we receive a response
   // find ep
   //updateClientActivity(ep);
-  console.log(req);
 
   let formatStr = req.headers['Content-Format'];
   let formatInt = -1;
