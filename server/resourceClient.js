@@ -2,6 +2,7 @@
 const coap = require('coap'); // https://github.com/coapjs/node-coap#readme
 const coapPacket = require('coap-packet');
 const dtls = require('node-mbedtls-server');
+const dgram = require('dgram');
 
 const sharedEmitter = require('./transport/sharedEmitter');
 const { sendCoapRequest } = require('./transport/coapClient');
@@ -11,6 +12,9 @@ const { handleRegister, handleUpdate, handleDeregister} = require('./handleRegis
 const { registerObservation, getObservation, deregisterObservation, findTokenByEpAndPath } = require('./observationRegistry');
 const PayloadCodec = require('../utils/payloadCodec');
 const CONTENT_FORMATS = require('../utils/contentFormats');
+const MessageStore = require('./transport/MessageStore');
+
+$.msgStore = new MessageStore();
 
 const { 
   getClient,
@@ -23,98 +27,35 @@ const { startTimeoutManager, stopTimeoutManager } = require('./timeoutManager');
 const coapEnabled = true;
 const mqttEnabled = false;
 
+$.coapSocket = dgram.createSocket('udp4');
 
 // === method to initialize client based on protocol ===
 function startLwM2MCoapServer(validation, port, options = {}) {
-  port = options?.port || 5683; // Standard CoAPS (DTLS) port
+  port = options?.port || 5683; // Standard CoAP port
+  $.coapSocket.bind(port, () => {
+    console.log('[COAP Server] Socket bound!');
 
-  //const server = coap.createServer({ type: 'udp6' }) for IPV6
-  const server = coap.createServer((req, res) => {
-    const path = req?.url.split('?')[0];
-    const method = req?.method;
+    const protocol = 'coap';
 
-    if (method === 'POST' && path === '/rd') {
-      handleRegister(req, res, 'coap', validation)
-        .then(({ ep, location }) => {
-          sharedEmitter.emit('registration', { protocol: 'coap', ep, location });
-        })
-        .catch((err) => {
-          console.error(`[CoAP Server] Register error: ${err.message}`);
-        });
+    $.coapSocket.on('error', (err) => {
+      console.error(`[COAP Server] error:\n${err.stack}`);
+      $.coapSocket.close();
+    });
 
-    } else if (method === 'PUT' && path.startsWith('/rd/')) {
-      handleUpdate(req, res, path)
-        .then(({ ep, location }) => {
-          sharedEmitter.emit('update', { protocol: 'coap', ep, location });
-        })
-        .catch((err) => {
-          console.error(`[CoAP Server] Update error: ${err.message}`);
-        });
+    $.coapSocket.on('message', (msg, rinfo) => {
+      console.log(`[COAP Server] ${msg} from ${rinfo.address}:${rinfo.port}`);
+      parseReceivedData($.coapSocket,protocol,msg,validation, rinfo.address, rinfo.port);
+    });
 
-    } else if (method === 'DELETE' && path.startsWith('/rd/')) {
-      handleDeregister(req, res, path)
-        .then(({ ep }) => {
-          sharedEmitter.emit('deregistration', { protocol: 'coap', ep });
-        })
-        .catch((err) => {
-          console.error(`[CoAP Server] Deregister error: ${err.message}`);
-        });
-    } else if (method === 'GET' && (req?.headers?.observe !== undefined || req?.headers?.Observe !== undefined) ) {
-      try {
-        const { confirmable, token, options: packetOptions } = req._packet;
-        const decodedToken = Buffer.from(token).toString('hex');
-        const decodedPayload = PayloadCodec.decode(req?.payload, 'text/plain');
+    $.coapSocket.on('listening', () => {
+      const address = $.coapSocket.address();
+      console.log(`[CoAP Server] LwM2M Server started on port: ${address.port}`);
+      startTimeoutManager(options?.client?.offlineTimeout, options?.client?.checkInterval); // Start monitoring client timeouts
+    });
 
-        const observation = getObservation(decodedToken);
+    return $.coapSocket;
 
-        // Update client activity for observation data
-        if (observation?.ep) {
-          updateClientActivity(observation.ep);
-        }
-
-        // Emit the observation with useful details
-        sharedEmitter.emit('observation', {
-          protocol: 'coap',
-          token : decodedToken,
-          ep: observation?.ep,
-          method,
-          path: observation?.path,
-          payload: decodedPayload
-        });
-        
-        if(!observation){
-          const error = `Observation is not registered for token ${decodedToken}`
-          sharedEmitter.emit('error', {
-            error
-          });
-          res.code = '5.00';
-          res.end('Observation token is not registered');
-          return;
-        }
-
-        // Reply to confirmable observe request
-        if (confirmable) {
-          res.end(); // Empty ACK
-        }
-
-      } catch (err) {
-        console.error(`[Observation] Error handling observation:`, err);
-        res.code = '5.00';
-        res.end('Observation handler failed');
-      }
-        
-    } else {
-      res.code = '4.04';
-      res.end('Not Found');
-    }
   });
-
-  server.listen(port, () => {
-    console.log(`[CoAP] LwM2M Server listening on port ${port}`);
-    startTimeoutManager(options?.client?.offlineTimeout, options?.client?.checkInterval); // Start monitoring client timeouts
-  });
-
-  return server;
 }
 
 // === method to initialize DTLS-enabled client ===
@@ -124,211 +65,17 @@ function startLwM2MDTLSCoapServer(validation, options = {}) {
   try {
 
     const dtlsServer = dtls.createServer(options);
-    
+    //$.coapDtlsServerSocket = dtlsServer._sock; // store reference for server sock
+
     dtlsServer.on('secureConnection', (socket) => {
       console.log(`[DTLS] New secure connection from ${socket.remoteAddress}:${socket.remotePort}`);
       
+      const protocol = 'coaps';  
+
       socket.on('data', (buffer) => {
         try {
           // Parse the CoAP message from the decrypted DTLS payload
-
-          const packet = coapPacket.parse(buffer);
-          //console.log(packet);
-          /*
-          code: '0.04',
-          confirmable: true,
-          reset: false,
-          ack: false,
-          messageId: 14976,
-          token: <Buffer >,
-          options: [
-            { name: 'Uri-Host', value: <Buffer 6c 6f 63 61 6c 68 6f 73 74> },
-            { name: 'Uri-Path', value: <Buffer 72 64> }
-          ],
-          payload: <Buffer >
-          */
-          const uriHost = packet.options.find(option => option.name === 'Uri-Host');
-          const uriPath = packet.options
-            .filter(o => o.name === 'Uri-Path')
-            .map(o => o.value.toString())
-            .join('/');
-
-          const uriQuery = packet.options.find(option => option.name === 'Uri-Query');
-          const host = uriHost ? "/" + Buffer.from(uriHost.value).toString('utf8') : "";
-          const path = uriPath ? "/" + uriPath : "";
-          const query = uriQuery ? '?' + Buffer.from(uriQuery.value).toString('utf8') : '';
-
-          const method = {
-            '0.01': 'GET',
-            '0.02': 'POST',
-            '0.03': 'PUT',
-            '0.04': 'DELETE'
-          }[packet.code] || 'UNKNOWN';
-
-          // Create a mock request/response object compatible with existing handlers
-          const req = {
-            url: path+query,
-            rsinfo : {
-              address : socket.remoteAddress,
-              port: socket.remotePort
-            },
-            method: method,
-            payload: packet.payload,
-            headers: {},
-            _packet: packet
-          };
-          
-          // Convert packet options to headers for compatibility
-          if (packet.options) {
-            packet.options.forEach(option => {
-              switch (option.name) {
-                case 'Observe':
-                  req.headers.Observe = option.value;
-                  req.headers.observe = option.value;
-                  break;
-                case 'Content-Format':
-                  req.headers['Content-Format'] = option.value;
-                  break;
-              }
-            });
-          }
-          
-          const res = {
-            code: '2.05',
-            payload: null,
-            options: [],
-            headers: {},
-            setOption: function(name, values) {
-              // Store options for response
-              if (!Array.isArray(values)) {
-                this.options.push({
-                  name: name,
-                  value: Buffer.from([values])
-                })
-              } else {
-                for (const value of values) {
-                  this.options.push({ name: name, value })
-                }
-              }
-            },
-            setHeader: function(name, value) {
-              // Store headers for response
-              this.headers[name] = value;
-            },  
-
-            end: function(data) {
-              // Create CoAP response packet
-              const responsePacket = {
-                messageId: packet.messageId,
-                token: packet.token,
-                code: this.code,
-                options: this.options,
-                headers: this.headers,
-                payload: Buffer.isBuffer(data) ? data : Buffer.from(data || this.payload || '')
-              };
-
-              // Generate CoAP response buffer
-              const responseBuffer = coapPacket.generate(responsePacket);
-              
-              try{
-                // Send encrypted response through DTLS socket
-                socket.write(responseBuffer);
-              }catch(err){
-                console.log(`[DTLS SERVER] error writing on socket: ${err}`)
-              }
-            }
-          };
-          
-          /*
-          console.log("host: ", uriHost);
-          console.log("path: ", path);
-          console.log("query: ", query);
-          console.log("method: ", method);
-          console.log("path: ", path);
-          */
-
-          // Route to appropriate handler based on method and path
-          if (method === 'GET' && path === '/time') { // for test porposes
-            res.code = '2.05';
-            res.end(new Date().toISOString());
-            console.log(`[DTLS Server] Responded to GET /time`); 
-          }
-          else if (method === 'POST' && path === '/rd') {
-
-            handleRegister(req, res, 'coaps', validation)
-              .then(({ ep, location }) => {
-                sharedEmitter.emit('registration', { protocol: 'coaps', ep, location });
-              })
-              .catch((err) => {
-                console.error(`[DTLS Server] Register error: ${err.message}`);
-              });
-
-          } else if (method === 'PUT' && path.startsWith('/rd/')) {
-            handleUpdate(req, res, path)
-              .then(({ ep, location }) => {
-                sharedEmitter.emit('update', { protocol: 'coaps', ep, location });
-              })
-              .catch((err) => {
-                console.error(`[coaps Server] Update error: ${err.message}`);
-              });
-
-          } else if (method === 'DELETE' && path.startsWith('/rd/')) {
-            handleDeregister(req, res, path)
-              .then(({ ep }) => {
-                sharedEmitter.emit('deregistration', { protocol: 'coaps', ep });
-              })
-              .catch((err) => {
-                console.error(`[DTLS Server] Deregister error: ${err.message}`);
-              });
-              
-          } else if (method === 'GET' && (req?.headers?.observe !== undefined || req?.headers?.Observe !== undefined)) {
-            try {
-              const { confirmable, token, options: packetOptions } = req._packet;
-              const decodedToken = Buffer.from(token).toString('hex');
-              const decodedPayload = PayloadCodec.decode(req?.payload, 'text/plain');
-
-              const observation = getObservation(decodedToken);
-
-              // Update client activity for observation data
-              if (observation?.ep) {
-                updateClientActivity(observation.ep);
-              }
-
-              // Emit the observation with useful details
-              sharedEmitter.emit('observation', {
-                protocol: 'dtls',
-                token: decodedToken,
-                ep: observation?.ep,
-                method,
-                path: observation?.path,
-                payload: decodedPayload
-              });
-
-              if (!observation) {
-                const error = `Observation is not registered for token ${decodedToken}`;
-                res.code = '5.00';
-                res.end('Observation token is not registered');
-                sharedEmitter.emit('error', {
-                  error
-                });
-                return;
-              }
-
-              // Reply to confirmable observe request
-              if (confirmable) {
-                res.end(); // Empty ACK
-              }
-
-            } catch (err) {
-              console.error(`[DTLS Observation] Error handling observation:`, err);
-              res.code = '5.00';
-              res.end('Observation handler failed');
-            }
-            
-          } else {
-            res.code = '4.04';
-            res.end('Not Found');
-          }
+          parseReceivedData(socket,protocol,buffer,validation);
           
         } catch (err) {
           console.error(`[DTLS Server] Error processing CoAP message:`, err);
@@ -443,7 +190,7 @@ function dispatchRequest(ep, method, path, payload = null, options = {}) {
   let requestPromise;
   if (coapEnabled && client.protocol === 'coap') {
     requestPromise = sendCoapRequest(client, method, path, payload, '', options);
-  } else if (coapEnabled && client.protocol === 'coaps') {
+  } else if (coapEnabled && client.protocol === 'dtls') {
     requestPromise = sendDTLSCoapRequest(client, method, path, payload, '', options);
   } else if (mqttEnabled && client.protocol === 'mqtt') {
     requestPromise = sendMqttRequest(client, method, path, payload, options);
@@ -507,9 +254,12 @@ function startObserveRequest(ep, path, observe = 0, format = 'text') {
   return dispatchRequest(ep, 'GET', path, null, { observe, format: CONTENT_FORMATS[format] })
     .then(({ token, code, socket }) => {
       try {
+        // coapClient doesn't have callback right now
+        // parseReceivedData func is called instead
+
         // Register the observation in the registry, including the socket for cleanup
         registerObservation(token, ep, path, format, socket);
-        sharedEmitter.emit('startObservation', { ep, token, path });
+        sharedEmitter.emit('startObservation', { ep, token: token.toString('hex'), path });
         return { token, ep, path, format};
       } catch (error) {
         throw new Error(`Register observation error: ${error.message}`);
@@ -523,14 +273,15 @@ function startObserveRequest(ep, path, observe = 0, format = 'text') {
 }
 
 function stopObserveRequest(ep, path, observe = 1, format = 'text') {
-  return dispatchRequest(ep, 'GET', path, null, { observe, format: CONTENT_FORMATS[format] })
+  const token = findTokenByEpAndPath(ep,path)
+  return dispatchRequest(ep, 'GET', path, null, { observe, format: CONTENT_FORMATS[format], token})
   .then( ({token}) => {
     try{
       if(!token){
         token = findTokenByEpAndPath(ep, path)
       }
       deregisterObservation(token);
-      sharedEmitter.emit('stopObservation', { ep, token, path });
+      sharedEmitter.emit('stopObservation', { ep, token : token.toString('hex'), path });
       return { token, ep, path, format};
     }catch(error){
       throw new Error(`Deregister error: ${error}`);
@@ -558,7 +309,351 @@ function createRequest(ep, parentPath, payload, format = 'text') {
   return dispatchRequest(ep, 'POST', parentPath, payload, { format: CONTENT_FORMATS[format] });
 }
 
+function parseReceivedData(socket,protocol,data,validation,address=null,port=null){
+  
+  let packet = null;
+  try{
+    packet = coapPacket.parse(data);
+  }catch(err){
+    console.log(packet);
+    console.log(err)
+    return;
+  }
 
+  let response = false;
+  let request = false;
+
+  const uriHost = packet.options.find(option => option.name === 'Uri-Host');
+  const uriPath = packet.options
+    .filter(o => o.name === 'Uri-Path')
+    .map(o => o.value.toString())
+    .join('/');
+
+  const host = uriHost ? "/" + Buffer.from(uriHost.value).toString('utf8') : "";
+  const path = uriPath ? "/" + uriPath : "";
+  const uriQueryParts = packet.options
+  .filter(opt => opt.name === 'Uri-Query')
+  .map(opt => opt.value.toString('utf8'));
+  const token = Buffer.from(packet.token).toString('hex');
+  const query = uriQueryParts.length ? '?' + uriQueryParts.join('&') : '';
+
+  const method = {
+    '0.01': 'GET',
+    '0.02': 'POST',
+    '0.03': 'PUT',
+    '0.04': 'DELETE',
+    '2.05': 'CONTENT',
+    '4.04': 'NOT FOUND',
+    '5.00': 'INTERNAL ERROR',
+  }[packet.code] || 'UNKNOWN';
+
+  let req = {
+    url: path+query,
+    rsinfo : {
+      address : address || socket?.remoteAddress,
+      port: port || socket?.remotePort
+    },
+    method: method,
+    payload: packet.payload,
+    headers: {},
+    _packet: packet
+  };
+  
+  // Convert packet options to headers for compatibility
+  if (packet.options) {
+    packet.options.forEach(option => {
+      switch (option.name) {
+        case 'Observe':
+          req.headers.Observe = option.value;
+          req.headers.observe = option.value;
+          break;
+        case 'Content-Format':
+          req.headers['Content-Format'] = option.value;
+          break;
+      }
+    });
+  }
+  
+  const res = {
+    code: '2.05',
+    payload: null,
+    options: [],
+    headers: {},
+    setOption: function(name, values) {
+      // Store options for response
+      if (!Array.isArray(values)) {
+        this.options.push({
+          name: name,
+          value: Buffer.from([values])
+        })
+      } else {
+        for (const value of values) {
+          this.options.push({ name: name, value })
+        }
+      }
+    },
+    setHeader: function(name, value) {
+      // Store headers for response
+      this.headers[name] = value;
+    },  
+
+    end: function(data) {
+      // Create CoAP response packet
+
+      const responsePacket = {
+        messageId: packet.messageId,
+        token: packet.token,
+        code: this.code,
+        options: this.options,
+        headers: this.headers,
+        payload: Buffer.isBuffer(data) ? data : Buffer.from(data || this.payload || '')
+      };
+
+      // Generate CoAP response buffer
+      const responseBuffer = coapPacket.generate(responsePacket);
+      
+      // Send encrypted response through DTLS socket
+      if(protocol === 'coaps')
+        try{
+          socket.write(responseBuffer);
+        }catch(err){
+          console.log(`[COAP Server] ${protocol} error replying to: ${address}:${port}`);
+          console.error(err);
+        }
+      else if(protocol === 'coap'){
+        try{
+          socket.send(responseBuffer,port,address,(err)=>{
+            if(err){
+              console.log(`[COAP Server] ${protocol} error replying to: ${address}:${port}`);
+              console.error(err);
+            }
+            console.log(`[COAP Server] ${protocol} replied to: ${address}:${port}`);
+          });
+        }catch(err){
+          console.log(`[COAP Server] error replying to: ${address}:${port}`);
+          console.error(err);
+        }
+      }
+      else{
+        console.log(`[COAP Server]: protocol:${protocol} not known`);
+      }
+    }
+  };
+
+  switch (packet.code[0]) {
+    case '0':
+      console.log(`Client request: ${protocol} ${method} ${path}.`)
+      request = true;
+      break;
+    case '2':
+      console.log("Success response (2.xx): The request was successful.")
+      response = true;
+      break;
+    case '4':
+      console.log("Client Error response (4.xx): The request was invalid or cannot be served.");
+      response = true;
+      break;
+    case '5':
+      console.log("Server Error response (5.xx): The server failed to fulfill a valid request.");
+      response = true;
+      break;
+    default:
+      console.log("Client Code not known");
+      return;
+  }
+
+  if(response === true){
+    const msgSent = $.msgStore.get(token);
+    if(msgSent){
+      parseResponse(
+        req,
+        protocol,
+        msgSent.ep,
+        msgSent.msgId,
+        msgSent.method,
+        msgSent.path,
+        packet.code,
+        msgSent.format,
+        msgSent.observe
+      );
+      $.msgStore.delete(token);
+    }else{
+      console.log(`msg associated with token: ${token} not found`);
+    }
+  }else if(request === true){
+    createResponse(req,res,validation,protocol,method,path)
+  }
+
+}
+
+function parseResponse(req,protocol,ep,msgId,method,path,code,format,observe=null){
+
+  // Update client activity when we receive a response
+  // find ep
+  //updateClientActivity(ep);
+
+  let formatStr = req.headers['Content-Format'];
+  let formatInt = -1;
+  let decodedPayload; // Added local declaration
+  if(formatStr){
+    if(Buffer.isBuffer(formatStr)){
+      if (formatStr.length >= 2) {
+        formatInt = formatStr.readUInt16BE(0);
+      } else if (formatStr.length === 1) {
+        formatInt = formatStr.readUInt8(0);
+      }
+    }
+  }
+  format = formatInt > -1 ? formatInt : format; // use format sent
+
+  try {
+    decodedPayload = PayloadCodec.decode(req.payload,CONTENT_FORMATS[format])
+  } catch (err) {
+    return Promise.reject(`Failed to decode payload: ${err.message}`);
+  }
+
+  let options = {
+    format: CONTENT_FORMATS[format]
+  }
+
+  let token = null;
+  if(req._packet?.token.length > 0)
+    token = Buffer.from(req._packet.token,'hex')
+
+  console.log(`response rcv ${req.rsinfo.address}:${req.rsinfo.port} 
+    ep: ${ep}
+    msgId: ${msgId}
+    method: ${method} 
+    path: ${path} 
+    observe: ${observe} 
+    format: ${format}
+    token: ${token.toString('hex')}
+    payload: ${JSON.stringify(decodedPayload)}
+  `);
+
+  // if response observe == 0 - observe start
+  // if response observe == 1 and token = registered token - observe stop
+  if(observe == 0){
+    // payload is the actual vale of path
+    sharedEmitter.emit('response', 
+    { 
+      protocol: protocol,
+      ep, 
+      method, 
+      path, 
+      payload : decodedPayload, 
+      options,
+      code
+    });
+    method = 'OBSERVE';
+    decodedPayload = "Observation started"
+    registerObservation(token, ep, path, format);
+    sharedEmitter.emit('startObservation', { ep, token:token.toString('hex'), path });
+  }else if(observe == 1){
+    method = 'CANCEL-OBSERVE';
+    deregisterObservation(token, ep, path, format);
+    sharedEmitter.emit('stopObservation', { ep, token:token.toString('hex'), path });
+  }
+
+  sharedEmitter.emit('response', 
+  { 
+    protocol: protocol,
+    ep, 
+    method, 
+    path, 
+    payload : decodedPayload, 
+    options,
+    code
+  });
+
+
+}
+
+function createResponse(req,res,validation,protocol,method,path){
+
+  // Route to appropriate handler based on method and path
+  if (method === 'GET' && path === '/time') { // for test porposes
+    res.code = '2.05';
+    res.end(new Date().toISOString());
+    console.log(`[COAP Server] Responded to GET /time`); 
+  }
+  else if (method === 'POST' && path === '/rd') {
+
+    handleRegister(req, res, protocol, validation)
+      .then(({ ep, location }) => {
+        sharedEmitter.emit('registration', { protocol, ep, location });
+      })
+      .catch((err) => {
+        console.error(`[COAP Server Parser] Register error: ${err.message}`);
+      });
+
+  } else if (method === 'PUT' && path.startsWith('/rd/')) {
+    handleUpdate(req, res, path)
+      .then(({ ep, location }) => {
+        sharedEmitter.emit('update', { protocol: 'coaps', ep, location });
+      })
+      .catch((err) => {
+        console.error(`[COAP Server Parser] Update error: ${err.message}`);
+      });
+
+  } else if (method === 'DELETE' && path.startsWith('/rd/')) {
+    handleDeregister(req, res, path)
+      .then(({ ep }) => {
+        sharedEmitter.emit('deregistration', { protocol: 'coaps', ep });
+      })
+      .catch((err) => {
+        console.error(`[COAP Server Parser] Deregister error: ${err.message}`);
+      });
+      
+  } else if (method === 'GET' && (req?.headers?.observe !== undefined || req?.headers?.Observe !== undefined)) {
+    try {
+      const { confirmable, token, options: packetOptions } = req._packet;
+      const decodedToken = Buffer.from(token).toString('hex');
+      const decodedPayload = PayloadCodec.decode(req?.payload, 'text/plain');
+
+      const observation = getObservation(decodedToken);
+
+      // Update client activity for observation data
+      if (observation?.ep) {
+        updateClientActivity(observation.ep);
+      }
+
+      // Emit the observation with useful details
+      sharedEmitter.emit('observation', {
+        protocol: 'dtls',
+        token: decodedToken,
+        ep: observation?.ep,
+        method,
+        path: observation?.path,
+        payload: decodedPayload
+      });
+
+      if (!observation) {
+        const error = `Observation is not registered for token ${decodedToken}`;
+        res.code = '5.00';
+        res.end('Observation token is not registered');
+        sharedEmitter.emit('error', {
+          error
+        });
+        return;
+      }
+
+      // Reply to confirmable observe request
+      if (confirmable) {
+        res.end(); // Empty ACK
+      }
+
+    } catch (err) {
+      console.error(`[COAP Server Parser] Error handling observation:`, err);
+      res.code = '5.00';
+      res.end('Observation handler failed');
+    }
+    
+  } else {
+    res.code = '4.04';
+    res.end('Not Found');
+  }
+}
 
 module.exports = {
   startLwM2MCoapServer,

@@ -1,12 +1,14 @@
-const clients = new Map(); // key: ep, value: { address, port, location }
+const clients = new Map(); // key: ep, value: { address, port, protocol, location, lifetime, binding, socket }
 
 function registerClient(ep, info) {
   const now = Date.now();
   const clientInfo = {
     ...info,
+    ep,
     lastActivity: now,
     registeredAt: now,
-    offline: false
+    offline: false,
+    msgId: 0
   };
   clients.set(ep, clientInfo);
 }

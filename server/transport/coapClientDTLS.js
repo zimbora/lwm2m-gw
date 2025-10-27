@@ -28,9 +28,16 @@ function sendDTLSCoapRequest(client, method, path, payload = null, query = '', o
     const code = methodMap[method.toUpperCase()] || '0.01';
 
     // Build CoAP options
-    const coapOptions = [
-      { name: 'Uri-Path', value: Buffer.from(path) }
-    ];
+    const coapOptions = [];
+    
+    // Uri-Path segmentation
+    const cleaned = path.replace(/^\/+|\/+$/g, '');
+    if (cleaned.length) {
+      cleaned.split('/').filter(Boolean).forEach(segment => {
+        coapOptions.push({ name: 'Uri-Path', value: Buffer.from(segment) });
+      });
+    }
+    
     if (query) {
       coapOptions.push({ name: 'Uri-Query', value: Buffer.from(query) });
     }

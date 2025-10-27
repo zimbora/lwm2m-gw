@@ -30,10 +30,10 @@ function handleRegister(req, res, protocol, validRegistration) {
       
       // Set default lifetime to 1 day (86400 seconds) if not provided
       const lifetime = lt ? parseInt(lt) : 86400;
-
+      
       registerClient(ep, {
         address: req.rsinfo.address,
-        port: port || 5683,
+        port: port || req.rsinfo.port,
         protocol,
         location,
         lifetime: lifetime,
