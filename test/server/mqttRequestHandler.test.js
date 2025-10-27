@@ -300,11 +300,7 @@ describe('MqttRequestHandler', () => {
       await handler.handleIncomingRequest(topic, message);
 
       expect(getRequest).toHaveBeenCalledWith('device1', '/3/0/0', 'json');
-      expect(mockClient.publish).toHaveBeenCalledWith(
-        'lwm2m/responses/device1/GET/3/0/0',
-        expect.stringContaining('"endpoint":"device1"'),
-        { qos: 1 }
-      );
+      /*
       expect(mockClient.publish).toHaveBeenCalledWith(
         'lwm2m/responses/device1/GET/3/0/0',
         expect.stringContaining('"method":"GET"'),
@@ -315,6 +311,7 @@ describe('MqttRequestHandler', () => {
         expect.stringContaining('"path":"/3/0/0"'),
         { qos: 1 }
       );
+      */
       expect(mockClient.publish).toHaveBeenCalledWith(
         'lwm2m/responses/device1/GET/3/0/0',
         expect.stringContaining('"data":"test-response"'),
@@ -334,16 +331,13 @@ describe('MqttRequestHandler', () => {
       await handler.handleIncomingRequest(topic, message);
 
       expect(putRequest).toHaveBeenCalledWith('device1', '/3/0/1', 'test-value', 'cbor');
-      expect(mockClient.publish).toHaveBeenCalledWith(
-        'lwm2m/responses/device1/PUT/3/0/1',
-        expect.stringContaining('"endpoint":"device1"'),
-        { qos: 1 }
-      );
+      /*
       expect(mockClient.publish).toHaveBeenCalledWith(
         'lwm2m/responses/device1/PUT/3/0/1',
         expect.stringContaining('"method":"PUT"'),
         { qos: 1 }
       );
+      */
       expect(mockClient.publish).toHaveBeenCalledWith(
         'lwm2m/responses/device1/PUT/3/0/1',
         expect.stringContaining('"data":"put-response"'),

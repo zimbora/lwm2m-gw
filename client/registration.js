@@ -14,7 +14,7 @@ Change coap lib by dsockudp
 !!
 */
 
-function registerToServer(endpointName, serverHost, serverPort, localPort, timeoutMs = 1000, protocol = 'coap') {
+function registerToServer(endpointName, serverHost, serverPort, localPort = null, timeoutMs = 1000, protocol = 'coap') {
   $.logger.debug(`Register on server: ${serverHost}:${serverPort}`)
   return new Promise((resolve, reject) => {
     if (protocol === 'coaps') {
@@ -94,7 +94,8 @@ function registerToServer(endpointName, serverHost, serverPort, localPort, timeo
 
         registrationLocation = `/` + path;
         $.logger.info(`[Client] Registered with server. Location: ${path}`);
-        resolve(res.outSocket.port);
+        //resolve(res.outSocket.port);
+        resolve();
       });
 
       req.on('error', (err)=>{

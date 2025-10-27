@@ -3,7 +3,11 @@ const crypto = require('crypto');
 //const coap = require('coap'); //https://github.com/coapjs/node-coap#readme
 const coapPacket = require('coap-packet');
 const sharedEmitter = require('./sharedEmitter');
+const dgram = require('dgram');
 
+if(!$){
+  var $ = {};
+}
 /**
  * Sends a CoAP request.
  * @param {Object} client - Client info object. Must include at least host and port.
@@ -109,6 +113,10 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
       return reject(new Error('Invalid client: address is required'));
     }
 
+    if (!client || !client.port) {
+      return reject(new Error('Invalid client: port is required'));
+    }
+
     const token = options?.token ? Buffer.from(options.token,'hex') : crypto.randomBytes(8);
     console.log("token",token)
 
@@ -198,31 +206,16 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
 
       if(client?.socket && !client.socket.isClosed){
         socket = client.socket;
-        
-        try{
-          socket.send(coapReq, client.address, client.port);
-        }catch(error){
-          console.log(error)
-          reject(error)
-        }
       }else{
-        /*
-        socket = dtls.createSocket({
-          type: "udp4",
-          address: client.address,
-          port: Number(client.port),
-          psk: { "Client_identity": "secret" } // should be replaced with actual PSK, use client
-        });
+        socket = dgram.createSocket('udp4');
+      }
 
-        socket.on("connected", () => {
-          clearTimeout(timeout);
-          try{
-            socket.send(coapReq);
-          }catch(err){
-            return reject(err);
-          }
-        });
-        */
+      try{
+        console.log(client)
+        socket.send(coapReq, client.port, client.address);
+      }catch(error){
+        console.log(error)
+        reject(error)
       }
 
       // increase time for authentication

@@ -2,7 +2,7 @@ const coap = require('coap');
 const sharedEmitter = require('../../server/transport/sharedEmitter');
 const { startLwM2MCoapServer } = require('../../server/resourceClient');
 const { registerObservation, getObservation, deregisterObservation, cleanup } = require('../../server/observationRegistry');
-
+global.$ = {};
 
 describe('LwM2M CoAP Server - sharedEmitter events', () => {
 

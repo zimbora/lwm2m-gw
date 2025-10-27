@@ -14,6 +14,10 @@ const PayloadCodec = require('../utils/payloadCodec');
 const CONTENT_FORMATS = require('../utils/contentFormats');
 const MessageStore = require('./transport/MessageStore');
 
+if (typeof $ === "undefined") {
+  var $ = {}; // or assign to what you need
+}
+
 $.msgStore = new MessageStore();
 
 const { 
@@ -31,9 +35,9 @@ $.coapSocket = dgram.createSocket('udp4');
 
 // === method to initialize client based on protocol ===
 function startLwM2MCoapServer(validation, port, options = {}) {
-  port = options?.port || 5683; // Standard CoAP port
+  port = port || options?.port || 5683; // Standard CoAP port
   $.coapSocket.bind(port, () => {
-    console.log('[COAP Server] Socket bound!');
+    //console.log('[COAP Server] Socket bound!');
 
     const protocol = 'coap';
 
@@ -43,7 +47,8 @@ function startLwM2MCoapServer(validation, port, options = {}) {
     });
 
     $.coapSocket.on('message', (msg, rinfo) => {
-      console.log(`[COAP Server] ${msg} from ${rinfo.address}:${rinfo.port}`);
+      console.log(`[COAP Server] rx from ${rinfo.address}:${rinfo.port}: ${msg.toString('hex')}`);
+      // Use the URLSearchParams class to parse the string
       parseReceivedData($.coapSocket,protocol,msg,validation, rinfo.address, rinfo.port);
     });
 
@@ -315,8 +320,8 @@ function parseReceivedData(socket,protocol,data,validation,address=null,port=nul
   try{
     packet = coapPacket.parse(data);
   }catch(err){
-    console.log(packet);
-    console.log(err)
+    console.err(packet);
+    console.err(err)
     return;
   }
 
@@ -578,19 +583,19 @@ function createResponse(req,res,validation,protocol,method,path){
     console.log(`[COAP Server] Responded to GET /time`); 
   }
   else if (method === 'POST' && path === '/rd') {
-
     handleRegister(req, res, protocol, validation)
       .then(({ ep, location }) => {
+        console.info(`[COAP Server Parser] ep:${ep} registered`);
         sharedEmitter.emit('registration', { protocol, ep, location });
       })
       .catch((err) => {
         console.error(`[COAP Server Parser] Register error: ${err.message}`);
       });
-
   } else if (method === 'PUT' && path.startsWith('/rd/')) {
     handleUpdate(req, res, path)
       .then(({ ep, location }) => {
-        sharedEmitter.emit('update', { protocol: 'coaps', ep, location });
+        console.info(`[COAP Server Parser] ep:${ep} registration update`);
+        sharedEmitter.emit('update', { protocol, ep, location });
       })
       .catch((err) => {
         console.error(`[COAP Server Parser] Update error: ${err.message}`);
@@ -599,7 +604,8 @@ function createResponse(req,res,validation,protocol,method,path){
   } else if (method === 'DELETE' && path.startsWith('/rd/')) {
     handleDeregister(req, res, path)
       .then(({ ep }) => {
-        sharedEmitter.emit('deregistration', { protocol: 'coaps', ep });
+        console.info(`[COAP Server Parser] ep:${ep} deregistered`);
+        sharedEmitter.emit('deregistration', { protocol, ep });
       })
       .catch((err) => {
         console.error(`[COAP Server Parser] Deregister error: ${err.message}`);

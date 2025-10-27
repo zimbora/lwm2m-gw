@@ -1,11 +1,11 @@
 const { registerClient, updateClient, deregisterClientByLocation } = require('./clientRegistry');
 const url = require('url');
 
-function handleRegister(req, res, protocol, validRegistration) {
+function handleRegister(req, res, protocol, validRegistration = null) {
   return new Promise( async (resolve, reject) => {
     try {
       const query = new URLSearchParams(req.url.split('?')[1]);
-      console.debug(query);
+      console.debug(`[Handle Registration]: ${query}`);
       const ep = query.get('ep');
       const lt = query.get('lt');
       const port = query.get('port');
@@ -17,7 +17,7 @@ function handleRegister(req, res, protocol, validRegistration) {
         return reject(new Error('Missing ep in registration'));
       }
 
-      if (typeof validRegistration === 'function') {
+      if (validRegistration != null && typeof validRegistration === 'function') {
         const authorized = await validRegistration(ep);
         if (!authorized) {
           res.code = '5.00';
