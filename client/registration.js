@@ -47,7 +47,7 @@ function registerToServer(endpointName, serverHost, serverPort, localPort, timeo
       let query = "";
       
       //query = `ep=${endpointName}&lt=300&b=U&port=${localPort}` // set a different local port
-      query = `ep=${endpointName}&lt=300&b=U` // force server to use port of request
+      query = `ep=${endpointName}&lt=300&b=U`; // force server to use port of request
       
       if (agent?._sock) {
         agent._sock.close();
