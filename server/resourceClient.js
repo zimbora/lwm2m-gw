@@ -494,6 +494,7 @@ function parseResponse(req,protocol,ep,msgId,method,path,code,format,observe=nul
 
   let formatStr = req.headers['Content-Format'];
   let formatInt = -1;
+  let decodedPayload; // Added local declaration
   if(formatStr){
     if(Buffer.isBuffer(formatStr)){
       if (formatStr.length >= 2) {
