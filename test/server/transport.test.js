@@ -189,10 +189,10 @@ describe('Server Transport', () => {
       
       triggerMockResponse(mockSocket);
       
-      // Note: The implementation overrides format to 0 when provided (line 107-108 in coapClient.js).
-      // Since 0 is falsy, the condition at line 145 evaluates to false, so Content-Format
-      // is not added to the options. This appears to be the intended behavior in the current
-      // implementation.
+      // Note: The implementation overrides format to 0 when provided.
+      // Since 0 is falsy, the conditional check for format evaluates to false,
+      // so Content-Format is not added to the options. This appears to be the
+      // intended behavior in the current implementation.
       await sendCoapRequest(client, 'GET', '/test', null, '', { format: 50 });
       
       const generateCall = coapPacket.generate.mock.calls[0][0];
