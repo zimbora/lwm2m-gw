@@ -117,6 +117,8 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
       return reject(new Error('Invalid client: port is required'));
     }
 
+    console.log(`Preparing request to ${client.address}:${client.port}`);
+
     const token = options?.token ? Buffer.from(options.token,'hex') : crypto.randomBytes(8);
     console.log("token",token)
 
@@ -205,14 +207,28 @@ function sendCoapRequest(client, method, path, payload = null, query = '', optio
     }else{
 
       if(client?.socket && !client.socket.isClosed){
+        console.log("Reusing client socket");
+        console.log(`payload: ${payload}`)
+        console.log(`coapOptions: ${coapOptions}`)
         socket = client.socket;
+        socket.code = code;
+        socket.payload = payload;
+        socket.options = coapOptions;
       }else{
+        console.log(`Opening new socket for client`);
         socket = dgram.createSocket('udp4');
       }
 
       try{
-        console.log(client)
-        socket.send(coapReq, client.port, client.address);
+        console.log(client);
+        console.log(coapReq);
+        if(socket?.send){ // new socket
+          socket.send(coapReq, client.port, client.address);
+        }else{ // reusing socket
+          socket.end();
+          return;
+        }
+          
       }catch(error){
         console.log(error)
         reject(error)

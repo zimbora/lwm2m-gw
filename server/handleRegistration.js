@@ -38,6 +38,7 @@ function handleRegister(req, res, protocol, validRegistration = null) {
         location,
         lifetime: lifetime,
         binding,
+        socket: res
       });
 
       res.code = '2.01';

@@ -44,6 +44,8 @@ function deregisterClientByLocation(locationPath) {
 }
 
 function associateSocketToClient(ep, socket){
+
+  console.log("associate socket to client");
   let client = getClient(ep);
   clients.set(ep,{ ...client, socket });
 }
