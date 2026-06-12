@@ -21,7 +21,8 @@
   },
   "scripts": {
     "test": "jest",
-    "test:ci": "jest --ci --coverage --reporters=default --reporters=github-actions --coverageReporters=text --coverageReporters=lcov --coverageReporters=json-summary"
+    "test:ci": "jest --ci --coverage --reporters=default --reporters=github-actions --coverageReporters=text --coverageReporters=lcov --coverageReporters=json-summary",
+    "generate-docs": "node scripts/generate-docs.js"
   },
   "jest": {
     "forceExit": true,

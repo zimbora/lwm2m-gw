@@ -22,8 +22,11 @@
 [![issues](https://img.shields.io/github/issues/zimbora/lwm2m-gw.svg)](https://github.com/zimbora/lwm2m-gw/issues)
 [![PRs](https://img.shields.io/github/issues-pr/zimbora/lwm2m-gw.svg)](https://github.com/zimbora/lwm2m-gw/pulls)
 
-
 A comprehensive **Lightweight Machine to Machine (LwM2M)** implementation in Node.js featuring both client and server components with support for CoAP, DTLS encryption, and full bootstrap capabilities.
+
+## 📚 Documentation
+
+📖 **[API Documentation](https://zimbora.github.io/lwm2m-gw/api/)** - Complete API reference for all exported functions
 
 ## ⚡ Quick Demo
 
