@@ -1,0 +1,76 @@
+{
+  "objects": [
+    {
+      "id": 3400,
+      "name": "Custom Sensor",
+      "instances": [
+        {
+          "instanceId": 0,
+          "resources": {
+            "5700": {
+              "name": "Sensor Value",
+              "value": 25.5,
+              "type": "float",
+              "units": "°C",
+              "readable": true,
+              "writable": false,
+              "observable": true
+            },
+            "5701": {
+              "name": "Units", 
+              "value": "°C",
+              "type": "string",
+              "readable": true,
+              "writable": false,
+              "observable": false
+            },
+            "5750": {
+              "name": "Application Type",
+              "value": "Temperature Sensor",
+              "type": "string",
+              "readable": true,
+              "writable": true,
+              "observable": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 3401,
+      "name": "Light Control",
+      "instances": [
+        {
+          "instanceId": 0,
+          "resources": {
+            "5850": {
+              "name": "On/Off",
+              "value": false,
+              "type": "boolean",
+              "readable": true,
+              "writable": true,
+              "observable": true
+            },
+            "5851": {
+              "name": "Dimmer",
+              "value": 50,
+              "type": "integer",
+              "units": "%",
+              "readable": true,
+              "writable": true,
+              "observable": true
+            },
+            "5706": {
+              "name": "Colour",
+              "value": "#FFFFFF",
+              "type": "string",
+              "readable": true,
+              "writable": true,
+              "observable": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
